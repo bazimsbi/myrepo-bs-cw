@@ -1,0 +1,784 @@
+<title>Corewell Platform Architecture Review</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{
+  --ground:#F4F7F8; --panel:#FFFFFF; --panel-2:#E9F0F1; --inset:#F0F5F6;
+  --ink:#0C2A2E; --body:#2C4A4D; --muted:#5F7C7E; --hair:#CFDFE0;
+  --teal:#0F766E; --blue:#0369A1; --accent-soft:#D6ECEA;
+  --bronze:#A96A33; --silver:#7C8B92; --gold:#B08A17;
+  --crit:#C0342B; --crit-bg:#FBE9E7;
+  --high:#C25A18; --high-bg:#FCEEE3;
+  --med:#8A6D0F;  --med-bg:#FAF3DE;
+  --new:#0F766E;  --new-bg:#DDF0EE;
+  --shadow:0 1px 2px rgba(12,42,46,.05),0 6px 18px rgba(12,42,46,.06);
+  --mono:ui-monospace,"SF Mono","Cascadia Code","JetBrains Mono",Menlo,Consolas,monospace;
+  --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0A171A; --panel:#102327; --panel-2:#162E32; --inset:#14292D;
+    --ink:#E8F3F2; --body:#B8D0D0; --muted:#7C9B9B; --hair:#22423F;
+    --teal:#41BFB0; --blue:#5CB8E6; --accent-soft:#183B39;
+    --bronze:#D08F52; --silver:#9EAFB6; --gold:#D6AC33;
+    --crit:#F08C82; --crit-bg:#3A1D1A;
+    --high:#F0A167; --high-bg:#3A2617;
+    --med:#DCC062;  --med-bg:#332C13;
+    --new:#41BFB0;  --new-bg:#14332F;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0A171A; --panel:#102327; --panel-2:#162E32; --inset:#14292D;
+  --ink:#E8F3F2; --body:#B8D0D0; --muted:#7C9B9B; --hair:#22423F;
+  --teal:#41BFB0; --blue:#5CB8E6; --accent-soft:#183B39;
+  --bronze:#D08F52; --silver:#9EAFB6; --gold:#D6AC33;
+  --crit:#F08C82; --crit-bg:#3A1D1A;
+  --high:#F0A167; --high-bg:#3A2617;
+  --med:#DCC062;  --med-bg:#332C13;
+  --new:#41BFB0;  --new-bg:#14332F;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+}
+:root[data-theme="light"]{
+  --ground:#F4F7F8; --panel:#FFFFFF; --panel-2:#E9F0F1; --inset:#F0F5F6;
+  --ink:#0C2A2E; --body:#2C4A4D; --muted:#5F7C7E; --hair:#CFDFE0;
+  --teal:#0F766E; --blue:#0369A1; --accent-soft:#D6ECEA;
+  --bronze:#A96A33; --silver:#7C8B92; --gold:#B08A17;
+  --crit:#C0342B; --crit-bg:#FBE9E7;
+  --high:#C25A18; --high-bg:#FCEEE3;
+  --med:#8A6D0F;  --med-bg:#FAF3DE;
+  --new:#0F766E;  --new-bg:#DDF0EE;
+  --shadow:0 1px 2px rgba(12,42,46,.05),0 6px 18px rgba(12,42,46,.06);
+}
+*{box-sizing:border-box}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+body{margin:0;background:var(--ground);color:var(--body);font-family:var(--sans);
+  font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:0 28px}
+h1,h2,h3,h4{color:var(--ink);text-wrap:balance;margin:0;line-height:1.2}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--teal);font-weight:600;margin:0}
+code,.mono{font-family:var(--mono)}
+
+header.masthead{border-bottom:1px solid var(--hair);background:var(--panel)}
+header.masthead .wrap{padding-top:34px;padding-bottom:30px}
+header.masthead h1{font-size:clamp(28px,4.4vw,42px);letter-spacing:-.018em;font-weight:700;margin:12px 0 0}
+.sub{font-size:clamp(15px,2vw,18px);color:var(--body);max-width:66ch;margin:14px 0 0}
+.facts{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.fact{font-family:var(--mono);font-size:11.5px;border:1px solid var(--hair);background:var(--inset);
+  border-radius:6px;padding:5px 10px;color:var(--muted)}
+.fact b{color:var(--ink);font-weight:600}
+
+/* report chrome */
+.rulebar{height:4px;background:linear-gradient(90deg,var(--teal),var(--blue) 55%,var(--bronze))}
+.byline{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-top:8px}
+.byline .org{font-weight:700;color:var(--ink);font-size:15px;letter-spacing:-.01em}
+.byline .role{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.06em;
+  text-transform:uppercase}
+.docctl{margin-top:26px;border:1px solid var(--hair);border-radius:10px;overflow:hidden;
+  background:var(--inset)}
+.docctl table{width:100%;border-collapse:collapse;font-size:13.5px}
+.docctl th,.docctl td{text-align:left;padding:9px 14px;border-bottom:1px solid var(--hair);
+  vertical-align:top}
+.docctl tr:last-child th,.docctl tr:last-child td{border-bottom:none}
+.docctl th{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);font-weight:600;width:150px;white-space:nowrap}
+.docctl td{color:var(--ink)}
+.classif{display:inline-block;font-family:var(--mono);font-size:10.5px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:4px;
+  background:var(--med-bg);color:var(--med)}
+
+.summary{background:var(--panel);border:1px solid var(--hair);border-left:3px solid var(--teal);
+  border-radius:0 10px 10px 0;padding:22px 24px;margin-top:26px;box-shadow:var(--shadow)}
+.summary h3{font-size:17px;font-weight:700;margin-bottom:12px}
+.summary p{margin:0 0 12px;font-size:15px;line-height:1.6;max-width:72ch}
+.summary p:last-child{margin-bottom:0}
+.summary b{color:var(--ink)}
+
+.toc{margin-top:26px;border:1px solid var(--hair);border-radius:10px;background:var(--panel);
+  padding:18px 22px;box-shadow:var(--shadow)}
+.toc h3{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);font-weight:600;margin-bottom:12px}
+.toc ol{margin:0;padding:0;list-style:none;counter-reset:toc;display:flex;
+  flex-direction:column;gap:8px}
+.toc li{counter-increment:toc;font-size:14.5px}
+.toc li a{color:var(--body);text-decoration:none;display:flex;gap:12px;align-items:baseline;
+  border-bottom:1px dotted var(--hair);padding-bottom:6px}
+.toc li a:hover,.toc li a:focus-visible{color:var(--teal)}
+.toc li a::before{content:counter(toc) ".";font-family:var(--mono);font-size:12px;
+  color:var(--teal);font-weight:700;flex:none;min-width:18px}
+.toc li a .tl{flex:1}
+.toc li a .tn{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+
+.secnum{font-family:var(--mono);font-size:11.5px;color:var(--teal);font-weight:700;
+  letter-spacing:.08em}
+a{color:var(--blue)}
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:3px}
+
+@media print{
+  body{background:#fff;font-size:11pt}
+  section{page-break-inside:avoid;border-bottom:none;padding:22px 0}
+  figure{page-break-inside:avoid;box-shadow:none}
+  .toc{page-break-after:always}
+  .gap,.move,.ph,.cf{page-break-inside:avoid}
+}
+
+section{padding:52px 0;border-bottom:1px solid var(--hair)}
+.sec-title{font-size:clamp(21px,2.9vw,27px);font-weight:700;letter-spacing:-.01em;margin-top:10px}
+.sec-lede{color:var(--body);max-width:68ch;margin:12px 0 0;font-size:15.5px}
+
+figure{margin:30px 0 0;background:var(--panel);border:1px solid var(--hair);border-radius:12px;
+  padding:22px 20px 16px;box-shadow:var(--shadow);overflow-x:auto}
+figure svg{display:block;width:100%;min-width:660px;max-width:100%;height:auto;color:var(--body)}
+figcaption{font-size:13.5px;color:var(--muted);margin-top:14px;padding-top:12px;
+  border-top:1px solid var(--hair);line-height:1.5}
+figcaption b{color:var(--ink);font-weight:600}
+
+.note{background:var(--inset);border:1px solid var(--hair);border-left:3px solid var(--blue);
+  border-radius:0 8px 8px 0;padding:14px 16px;margin-top:26px;font-size:14.5px}
+.note b{color:var(--ink)}
+
+/* SVG semantic colors — theme-aware so diagrams stay legible on both grounds */
+.s-bronze{stroke:var(--bronze);fill:none}   .t-bronze{fill:var(--bronze)}
+.s-silver{stroke:var(--silver);fill:none}   .t-silver{fill:var(--silver)}
+.s-gold{stroke:var(--gold);fill:none}       .t-gold{fill:var(--gold)}
+.s-new{stroke:var(--new)}                   .t-new{fill:var(--new)}
+.s-crit{stroke:var(--crit)}                 .t-crit{fill:var(--crit)}
+
+/* gap register */
+.gaps{display:flex;flex-direction:column;gap:10px;margin-top:26px}
+.gap{background:var(--panel);border:1px solid var(--hair);border-radius:10px;padding:15px 17px;
+  display:grid;grid-template-columns:88px 1fr;gap:16px;align-items:start;box-shadow:var(--shadow)}
+.gap.crit{border-left:3px solid var(--crit)}
+.gap.high{border-left:3px solid var(--high)}
+.gap.med{border-left:3px solid var(--med)}
+.sev{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  padding:3px 7px;border-radius:4px;text-align:center;white-space:nowrap}
+.sev.crit{background:var(--crit-bg);color:var(--crit)}
+.sev.high{background:var(--high-bg);color:var(--high)}
+.sev.med{background:var(--med-bg);color:var(--med)}
+.gap h4{font-size:15.5px;font-weight:650;margin-bottom:5px}
+.gap p{margin:0;font-size:14.5px;line-height:1.5}
+.gap .why{margin-top:7px;font-size:13.5px;color:var(--muted)}
+.gap .why b{color:var(--body);font-weight:600}
+.tag-inferred{font-family:var(--mono);font-size:10px;color:var(--muted);border:1px dashed var(--hair);
+  border-radius:4px;padding:2px 6px;margin-left:8px;white-space:nowrap;vertical-align:2px}
+
+/* moves */
+.moves{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:26px}
+@media(max-width:720px){.moves{grid-template-columns:1fr}}
+.move{background:var(--panel);border:1px solid var(--hair);border-radius:10px;padding:16px 18px;
+  box-shadow:var(--shadow)}
+.move .mk{font-family:var(--mono);font-size:11px;color:var(--teal);letter-spacing:.06em;
+  text-transform:uppercase;font-weight:600}
+.move h4{font-size:16px;margin:6px 0 7px;font-weight:650}
+.move p{margin:0;font-size:14.5px;line-height:1.5}
+
+/* sequence */
+.seq{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:26px}
+@media(max-width:860px){.seq{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.seq{grid-template-columns:1fr}}
+.ph{background:var(--panel);border:1px solid var(--hair);border-radius:10px;padding:16px;
+  box-shadow:var(--shadow);border-top:3px solid var(--teal)}
+.ph:nth-child(2){border-top-color:var(--blue)}
+.ph:nth-child(3){border-top-color:var(--silver)}
+.ph:nth-child(4){border-top-color:var(--gold)}
+.ph .when{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.05em}
+.ph h4{font-size:15.5px;margin:5px 0 10px;font-weight:650}
+.ph ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.ph li{font-size:13.5px;line-height:1.45;padding-left:15px;position:relative;color:var(--body)}
+.ph li::before{content:"";position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:1px;
+  background:var(--teal);transform:rotate(45deg)}
+
+/* confirm list */
+.confirm{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:22px}
+@media(max-width:720px){.confirm{grid-template-columns:1fr}}
+.cf{display:flex;gap:11px;align-items:flex-start;background:var(--panel);border:1px solid var(--hair);
+  border-radius:8px;padding:12px 14px}
+.cf .q{font-family:var(--mono);font-size:12px;color:var(--blue);font-weight:700;flex:none;padding-top:1px}
+.cf .t{font-size:14px;line-height:1.45}
+.cf .t b{color:var(--ink);font-weight:600}
+
+footer{padding:34px 0 46px;color:var(--muted);font-size:13.5px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between}
+</style>
+
+<div class="rulebar"></div>
+<header class="masthead">
+  <div class="wrap">
+    <p class="eyebrow">Corewell Health · Snowflake DD&amp;A · Discovery Readout</p>
+    <h1>Current Architecture &amp; Proposed Redesign</h1>
+    <p class="sub">What exists today, where the gaps are, and the structural changes that
+      deliver the unified data model and governance posture Corewell asked for.</p>
+    <div class="byline">
+      <span class="role">Prepared by</span>
+      <span class="org">TEKsystems Team</span>
+    </div>
+
+    <div class="docctl">
+      <table>
+        <tbody>
+          <tr><th scope="row">Client</th><td>Corewell Health</td></tr>
+          <tr><th scope="row">Engagement</th><td>Snowflake Data Due-Diligence &amp; Assessment (DD&amp;A)</td></tr>
+          <tr><th scope="row">Document</th><td>Current-State Architecture Review &amp; Redesign Proposal</td></tr>
+          <tr><th scope="row">Prepared by</th><td>TEKsystems Team</td></tr>
+          <tr><th scope="row">Version</th><td>v1.0 — Discovery readout</td></tr>
+          <tr><th scope="row">Status</th><td>Draft for client review — contains items pending confirmation (see&nbsp;§5)</td></tr>
+          <tr><th scope="row">Basis</th><td>Discovery workshops and architecture walkthrough with the Corewell data team</td></tr>
+          <tr><th scope="row">Classification</th><td><span class="classif">Confidential</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="summary">
+      <h3>Executive summary</h3>
+      <p>Corewell Health operates a functioning medallion architecture on a single AWS-hosted
+        Snowflake account, orchestrated by Astronomer with Fivetran ingestion and dbt Core
+        transformation. <b>The platform is operationally sound and the tooling is not the
+        problem</b> — a position Corewell stated directly and which this review supports.</p>
+      <p>The constraint is structural. Core business entities are modeled independently by each
+        domain, so there is <b>no single canonical definition</b> of Patient, Provider or
+        Encounter; business metrics are redefined inside each BI tool; and there is no visible
+        classification-to-masking chain protecting PHI. These are the conditions that produce
+        competing versions of the truth, and they cannot be resolved by tooling changes.</p>
+      <p>This review identifies <b>eleven gaps, three of them critical</b>. The recommended
+        response is <b>three insertions rather than a rebuild</b>: a conformed entity layer
+        between Silver and Gold, a semantic layer above Gold, and a tag-driven governance
+        overlay applied from Silver onward. Corewell's existing tool chain is retained in full.</p>
+      <p>The first eight weeks require <b>no platform change</b> — they consist of establishing
+        the facts and proving the pattern on a single entity, which also produces the evidence
+        the assessment workbook requires.</p>
+    </div>
+
+    <nav class="toc" aria-label="Contents">
+      <h3>Contents</h3>
+      <ol>
+        <li><a href="#s1"><span class="tl">Current state — what Corewell runs today</span><span class="tn">architecture</span></a></li>
+        <li><a href="#s2"><span class="tl">Gap analysis — eleven gaps ranked by exposure</span><span class="tn">11 findings</span></a></li>
+        <li><a href="#s3"><span class="tl">Target state — the proposed redesign</span><span class="tn">3 moves</span></a></li>
+        <li><a href="#s4"><span class="tl">Sequencing — how to get there</span><span class="tn">roadmap</span></a></li>
+        <li><a href="#s5"><span class="tl">Open questions to confirm with Corewell</span><span class="tn">6 items</span></a></li>
+      </ol>
+    </nav>
+
+    <div class="facts">
+      <span class="fact"><b>Single</b> Snowflake account · AWS</span>
+      <span class="fact">Environments partitioned by <b>database</b></span>
+      <span class="fact">Batch <b>ELT</b> · no streaming today</span>
+      <span class="fact"><b>11</b> gaps · <b>3</b> critical</span>
+    </div>
+  </div>
+</header>
+
+<section id="s1">
+  <div class="wrap">
+    <p class="eyebrow"><span class="secnum">Section 1</span> · Current state</p>
+    <h2 class="sec-title">What Corewell runs today</h2>
+    <p class="sec-lede">A medallion architecture on a single AWS-hosted Snowflake account.
+      Corewell reports no material problems with ingestion or processing tooling — the
+      pipeline works. The issues sit in how data is <em>modeled</em> and <em>governed</em>
+      once it lands.</p>
+
+    <figure>
+      <svg viewBox="0 0 1000 470" role="img"
+           aria-label="Current architecture: five source types feed Fivetran and Python or S3 ingestion into a single Snowflake account containing Bronze, Silver, Gold and Share layers plus Common and Workspace areas, consumed by Tableau, Power BI and Excel, with Astronomer orchestrating across the flow.">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" fill="currentColor"/>
+          </marker>
+          <marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" class="t-crit"/>
+          </marker>
+        </defs>
+
+        <!-- Astronomer orchestration bar -->
+        <rect x="168" y="16" width="612" height="30" rx="6" fill="none" stroke="currentColor"
+              stroke-width="1" stroke-dasharray="5 4" opacity=".65"/>
+        <text x="474" y="35" text-anchor="middle" font-size="12" fill="currentColor" opacity=".8">
+          Astronomer (Airflow) — central orchestration</text>
+
+        <!-- column headings -->
+        <text x="76"  y="70" text-anchor="middle" font-size="11.5" fill="currentColor" opacity=".6" letter-spacing="1">SOURCES</text>
+        <text x="228" y="70" text-anchor="middle" font-size="11.5" fill="currentColor" opacity=".6" letter-spacing="1">INGESTION</text>
+        <text x="540" y="70" text-anchor="middle" font-size="11.5" fill="currentColor" opacity=".6" letter-spacing="1">SNOWFLAKE — SINGLE ACCOUNT (AWS)</text>
+        <text x="905" y="70" text-anchor="middle" font-size="11.5" fill="currentColor" opacity=".6" letter-spacing="1">CONSUMPTION</text>
+
+        <!-- sources -->
+        <g font-size="11.5" fill="currentColor">
+          <rect x="20" y="86"  width="112" height="34" rx="5" fill="none" stroke="currentColor" opacity=".55"/>
+          <text x="76" y="107" text-anchor="middle">Platform apps</text>
+          <rect x="20" y="128" width="112" height="34" rx="5" fill="none" stroke="currentColor" opacity=".55"/>
+          <text x="76" y="149" text-anchor="middle">On-prem DBs</text>
+          <rect x="20" y="170" width="112" height="34" rx="5" fill="none" stroke="currentColor" opacity=".55"/>
+          <text x="76" y="191" text-anchor="middle">Data shares</text>
+          <rect x="20" y="212" width="112" height="34" rx="5" fill="none" stroke="currentColor" opacity=".55"/>
+          <text x="76" y="233" text-anchor="middle">Data files</text>
+          <rect x="20" y="254" width="112" height="34" rx="5" fill="none" stroke="currentColor" opacity=".55"/>
+          <text x="76" y="275" text-anchor="middle">Data streams</text>
+          <text x="76" y="299" text-anchor="middle" font-size="10.5" opacity=".55">(not in use today)</text>
+        </g>
+
+        <!-- ingestion -->
+        <g font-size="11.5" fill="currentColor">
+          <rect x="172" y="118" width="112" height="38" rx="5" fill="none" stroke="currentColor" opacity=".75"/>
+          <text x="228" y="142" text-anchor="middle">Fivetran</text>
+          <rect x="172" y="176" width="112" height="38" rx="5" fill="none" stroke="currentColor" opacity=".55"/>
+          <text x="228" y="200" text-anchor="middle">Python</text>
+          <rect x="172" y="234" width="112" height="38" rx="5" fill="none" stroke="currentColor" opacity=".45"/>
+          <text x="228" y="253" text-anchor="middle">S3 landing</text>
+          <text x="228" y="266" text-anchor="middle" font-size="10">minimal use</text>
+        </g>
+
+        <!-- arrows sources -> ingestion -->
+        <g stroke="currentColor" opacity=".5" marker-end="url(#ar)" fill="none">
+          <line x1="134" y1="103" x2="168" y2="130"/>
+          <line x1="134" y1="145" x2="168" y2="140"/>
+          <line x1="134" y1="187" x2="168" y2="192"/>
+          <line x1="134" y1="229" x2="168" y2="200"/>
+        </g>
+
+        <!-- snowflake container -->
+        <rect x="318" y="82" width="446" height="292" rx="10" fill="none" stroke="currentColor" opacity=".7"/>
+
+        <!-- medallion layers -->
+        <rect x="338" y="106" width="94" height="62" rx="6" fill="none" class="s-bronze" stroke-width="1.6"/>
+        <text x="385" y="132" text-anchor="middle" font-size="12.5" class="t-bronze" font-weight="600">Bronze</text>
+        <text x="385" y="150" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".7">raw</text>
+
+        <rect x="448" y="106" width="94" height="62" rx="6" fill="none" class="s-silver" stroke-width="1.6"/>
+        <text x="495" y="132" text-anchor="middle" font-size="12.5" class="t-silver" font-weight="600">Silver</text>
+        <text x="495" y="150" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".7">cleansed</text>
+
+        <rect x="558" y="106" width="94" height="62" rx="6" fill="none" class="s-gold" stroke-width="1.6"/>
+        <text x="605" y="132" text-anchor="middle" font-size="12.5" class="t-gold" font-weight="600">Gold</text>
+        <text x="605" y="150" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".7">curated</text>
+
+        <rect x="668" y="106" width="80" height="62" rx="6" fill="none" stroke="currentColor" opacity=".8"/>
+        <text x="708" y="132" text-anchor="middle" font-size="12.5" fill="currentColor" font-weight="600">Share</text>
+        <text x="708" y="150" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".7">exposure</text>
+
+        <!-- dbt arrows between layers -->
+        <g stroke="currentColor" fill="none" marker-end="url(#ar)">
+          <line x1="432" y1="137" x2="446" y2="137"/>
+          <line x1="542" y1="137" x2="556" y2="137"/>
+          <line x1="652" y1="137" x2="666" y2="137"/>
+        </g>
+        <text x="439" y="99" text-anchor="middle" font-size="10" fill="currentColor" opacity=".75">dbt</text>
+        <text x="549" y="99" text-anchor="middle" font-size="10" fill="currentColor" opacity=".75">dbt</text>
+
+        <!-- common + workspace bands -->
+        <rect x="338" y="196" width="410" height="42" rx="6" fill="none" stroke="currentColor"
+              opacity=".55" stroke-dasharray="4 3"/>
+        <text x="543" y="222" text-anchor="middle" font-size="12" fill="currentColor" opacity=".85">
+          Common — shared objects (purpose not yet defined)</text>
+
+        <rect x="338" y="252" width="410" height="52" rx="6" fill="none" stroke="currentColor" opacity=".75"/>
+        <text x="543" y="273" text-anchor="middle" font-size="12.5" fill="currentColor" font-weight="600">Workspace</text>
+        <text x="543" y="291" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".7">
+          analyst sandbox — no lifecycle or PHI rules confirmed</text>
+
+        <text x="541" y="336" text-anchor="middle" font-size="11" fill="currentColor" opacity=".7">
+          Dev / Test / Prod separated by database only — one account, one region</text>
+        <text x="541" y="356" text-anchor="middle" font-size="11" class="t-crit" font-weight="600">
+          No conformed entity layer · no semantic layer · masking not evident</text>
+
+        <!-- consumption -->
+        <g font-size="11.5" fill="currentColor">
+          <rect x="846" y="106" width="118" height="36" rx="5" fill="none" stroke="currentColor" opacity=".7"/>
+          <text x="905" y="128" text-anchor="middle">Tableau</text>
+          <rect x="846" y="152" width="118" height="36" rx="5" fill="none" stroke="currentColor" opacity=".7"/>
+          <text x="905" y="174" text-anchor="middle">Power BI</text>
+          <rect x="846" y="198" width="118" height="36" rx="5" fill="none" stroke="currentColor" opacity=".7"/>
+          <text x="905" y="220" text-anchor="middle">Excel</text>
+        </g>
+
+        <!-- flows out: Share -> BI (governed) -->
+        <g stroke="currentColor" fill="none" marker-end="url(#ar)" opacity=".75">
+          <path d="M748 130 L800 130 L800 124 L844 124"/>
+        </g>
+        <!-- Workspace -> BI (ungoverned bypass, highlighted) -->
+        <g class="s-crit" fill="none" marker-end="url(#arw)" stroke-width="1.7">
+          <path d="M748 278 L806 278 L806 216 L844 216"/>
+        </g>
+        <text x="812" y="256" font-size="10.5" class="t-crit" font-weight="600">bypasses Gold</text>
+      </svg>
+      <figcaption><b>Today.</b> The pipeline path (sources → Fivetran → Bronze → Silver → Gold → Share)
+        is sound and Corewell reports no material tooling problems. The red path is the structural
+        issue: analysts working in <span class="mono">Workspace</span> can serve BI directly,
+        bypassing the curated Gold layer — which is how competing versions of the same metric enter
+        circulation.</figcaption>
+    </figure>
+
+    <div class="note"><b>Confirmed vs. inferred.</b> The tool chain, single-account topology,
+      batch-ELT approach and consumption tools come from this week's discovery call.
+      The internal layer arrangement — <span class="mono">Common</span>,
+      <span class="mono">Workspace</span>, and which tools read from where — is read off the
+      architecture diagram and should be confirmed with Jay before this is presented as fact.</div>
+  </div>
+</section>
+
+<section id="s2">
+  <div class="wrap">
+    <p class="eyebrow"><span class="secnum">Section 2</span> · Gap analysis</p>
+    <h2 class="sec-title">Eleven gaps, ranked by exposure</h2>
+    <p class="sec-lede">Ordered by risk to Corewell, not by effort to fix. The top three
+      block the unified-model outcome the client explicitly asked for, or carry regulatory
+      exposure.</p>
+
+    <div class="gaps">
+      <div class="gap crit">
+        <span class="sev crit">Critical</span>
+        <div>
+          <h4>No conformed entity layer — every domain models core entities independently</h4>
+          <p>There is no single canonical definition of Patient, Provider, Encounter, Facility or
+            Payer. Each domain builds its own version inside Gold.</p>
+          <p class="why"><b>Why it matters —</b> this <em>is</em> the single-source-of-truth problem
+            Jay raised. Until core entities are defined once and reused, every downstream fix is cosmetic.</p>
+        </div>
+      </div>
+
+      <div class="gap crit">
+        <span class="sev crit">Critical</span>
+        <div>
+          <h4>PHI/PII protection is not architecturally visible<span class="tag-inferred">confirm</span></h4>
+          <p>No classification → tagging → masking chain appears in the current design. Row access
+            policies and column masking were named as a requirement, not as something already in place.</p>
+          <p class="why"><b>Why it matters —</b> healthcare data under HIPAA. If PHI is readable in
+            Silver, Workspace, or an Excel extract, controls at Gold are decorative.</p>
+        </div>
+      </div>
+
+      <div class="gap crit">
+        <span class="sev crit">Critical</span>
+        <div>
+          <h4>One account holds every environment</h4>
+          <p>Dev, Test and Prod are separated by database inside a single Snowflake account and region.</p>
+          <p class="why"><b>Why it matters —</b> a misapplied grant or role change crosses environments.
+            Blast radius, credit attribution, and PHI isolation all rest on RBAC discipline alone.</p>
+        </div>
+      </div>
+
+      <div class="gap high">
+        <span class="sev high">High</span>
+        <div>
+          <h4>No semantic layer — metrics are redefined per BI tool</h4>
+          <p>Tableau, Power BI and Excel each carry their own calculated fields and business logic.</p>
+          <p class="why"><b>Why it matters —</b> the same KPI returns different numbers in different
+            tools, which is usually how the "we need one source of truth" conversation starts.</p>
+        </div>
+      </div>
+
+      <div class="gap high">
+        <span class="sev high">High</span>
+        <div>
+          <h4>Workspace has no governed lifecycle<span class="tag-inferred">confirm</span></h4>
+          <p>The analyst sandbox appears to serve reporting directly, with no confirmed retention,
+            PHI restriction, or promotion path into Gold.</p>
+          <p class="why"><b>Why it matters —</b> an ungoverned sandbox becomes the de-facto source of
+            truth, and the one place PHI controls were never applied.</p>
+        </div>
+      </div>
+
+      <div class="gap high">
+        <span class="sev high">High</span>
+        <div>
+          <h4>Excel as a first-class consumption tier</h4>
+          <p>Data leaves the governed perimeter as extracts, carrying business logic with it.</p>
+          <p class="why"><b>Why it matters —</b> extracts cannot be masked, versioned, audited or
+            revoked once distributed — a live PHI exposure path.</p>
+        </div>
+      </div>
+
+      <div class="gap high">
+        <span class="sev high">High</span>
+        <div>
+          <h4>No disaster-recovery posture</h4>
+          <p>Single account, single region, no replication or failover group in evidence.</p>
+          <p class="why"><b>Why it matters —</b> no defined RTO/RPO for a platform serving clinical
+            and operational reporting.</p>
+        </div>
+      </div>
+
+      <div class="gap med">
+        <span class="sev med">Medium</span>
+        <div>
+          <h4>No catalog or lineage for discovery</h4>
+          <p>No evidence of a catalog; dbt lineage may exist but is not established as the
+            discovery surface for analysts.</p>
+          <p class="why"><b>Why it matters —</b> analysts who cannot find a trusted model rebuild
+            it — which re-creates the duplication problem continuously.</p>
+        </div>
+      </div>
+
+      <div class="gap med">
+        <span class="sev med">Medium</span>
+        <div>
+          <h4>No data quality gates between layers</h4>
+          <p>No confirmed test suite or promotion criteria governing Silver → Gold.</p>
+          <p class="why"><b>Why it matters —</b> without gates, "curated" is a naming convention
+            rather than a guarantee.</p>
+        </div>
+      </div>
+
+      <div class="gap med">
+        <span class="sev med">Medium</span>
+        <div>
+          <h4>The <span class="mono">Common</span> layer has no stated purpose<span class="tag-inferred">confirm</span></h4>
+          <p>It sits alongside the medallion layers but its contract is undefined.</p>
+          <p class="why"><b>Why it matters —</b> undefined shared areas accumulate orphaned objects
+            and become a second, competing home for shared dimensions.</p>
+        </div>
+      </div>
+
+      <div class="gap med">
+        <span class="sev med">Medium</span>
+        <div>
+          <h4>S3 is barely used</h4>
+          <p>Landing-zone usage is minimal, with no archival, cold-storage or Iceberg strategy.</p>
+          <p class="why"><b>Why it matters —</b> a missed lever for storage cost and for retaining
+            raw history cheaply outside Snowflake.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="s3">
+  <div class="wrap">
+    <p class="eyebrow"><span class="secnum">Section 3</span> · Target state</p>
+    <h2 class="sec-title">The redesign — three insertions, not a rebuild</h2>
+    <p class="sec-lede">Corewell's tooling stays exactly as it is: Astronomer, Fivetran, dbt Core,
+      Snowflake, and the existing BI estate. The redesign inserts two missing layers and one
+      cross-cutting overlay — the pieces that make a single source of truth structurally
+      enforceable rather than a matter of convention.</p>
+
+    <figure>
+      <svg viewBox="0 0 1000 500" role="img"
+           aria-label="Target architecture: the same ingestion and medallion pipeline, with a new Conformed Core layer inserted between Silver and Gold holding shared enterprise entities, a new Semantic layer between Gold and the BI tools holding single metric definitions, and a governance overlay applying classification, tagging, column masking and row access policies from Silver onward. Workspace is governed and promotes models into Gold rather than publishing directly to BI.">
+        <defs>
+          <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" fill="currentColor"/>
+          </marker>
+          <marker id="arn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" class="t-new"/>
+          </marker>
+        </defs>
+
+        <text x="500" y="26" text-anchor="middle" font-size="11.5" fill="currentColor" opacity=".6" letter-spacing="1">
+          UNCHANGED: ASTRONOMER · FIVETRAN · DBT CORE · SNOWFLAKE · EXISTING BI ESTATE</text>
+
+        <g font-size="11.5" fill="currentColor">
+          <rect x="20" y="62" width="96" height="56" rx="6" fill="none" stroke="currentColor" opacity=".55"/>
+          <text x="68" y="86" text-anchor="middle">Sources</text>
+          <text x="68" y="103" text-anchor="middle" font-size="10" opacity=".7">+ Fivetran</text>
+        </g>
+
+        <rect x="140" y="62" width="92" height="56" rx="6" class="s-bronze" stroke-width="1.6"/>
+        <text x="186" y="86" text-anchor="middle" font-size="12.5" class="t-bronze" font-weight="600">Bronze</text>
+        <text x="186" y="103" text-anchor="middle" font-size="10" fill="currentColor" opacity=".7">raw</text>
+
+        <rect x="256" y="62" width="92" height="56" rx="6" class="s-silver" stroke-width="1.6"/>
+        <text x="302" y="86" text-anchor="middle" font-size="12.5" class="t-silver" font-weight="600">Silver</text>
+        <text x="302" y="103" text-anchor="middle" font-size="10" fill="currentColor" opacity=".7">cleansed</text>
+
+        <rect x="372" y="54" width="150" height="72" rx="7" fill="none" class="s-new" stroke-width="2.2"/>
+        <text x="447" y="42" text-anchor="middle" font-size="10.5" class="t-new" font-weight="700">NEW</text>
+        <text x="447" y="78" text-anchor="middle" font-size="12.5" class="t-new" font-weight="700">Conformed Core</text>
+        <text x="447" y="95" text-anchor="middle" font-size="10" fill="currentColor" opacity=".8">Patient · Provider</text>
+        <text x="447" y="110" text-anchor="middle" font-size="10" fill="currentColor" opacity=".8">Encounter · Facility · Payer</text>
+
+        <rect x="546" y="62" width="92" height="56" rx="6" class="s-gold" stroke-width="1.6"/>
+        <text x="592" y="82" text-anchor="middle" font-size="12.5" class="t-gold" font-weight="600">Gold</text>
+        <text x="592" y="99" text-anchor="middle" font-size="10" fill="currentColor" opacity=".75">domain marts</text>
+        <text x="592" y="112" text-anchor="middle" font-size="10" fill="currentColor" opacity=".6">built on core</text>
+
+        <rect x="662" y="54" width="132" height="72" rx="7" fill="none" class="s-new" stroke-width="2.2"/>
+        <text x="728" y="42" text-anchor="middle" font-size="10.5" class="t-new" font-weight="700">NEW</text>
+        <text x="728" y="78" text-anchor="middle" font-size="12.5" class="t-new" font-weight="700">Semantic Layer</text>
+        <text x="728" y="95" text-anchor="middle" font-size="10" fill="currentColor" opacity=".8">one metric =</text>
+        <text x="728" y="110" text-anchor="middle" font-size="10" fill="currentColor" opacity=".8">one definition</text>
+
+        <g font-size="11" fill="currentColor">
+          <rect x="856" y="52" width="120" height="30" rx="5" fill="none" stroke="currentColor" opacity=".7"/>
+          <text x="916" y="71" text-anchor="middle">Tableau</text>
+          <rect x="856" y="88" width="120" height="30" rx="5" fill="none" stroke="currentColor" opacity=".7"/>
+          <text x="916" y="107" text-anchor="middle">Power BI</text>
+          <rect x="856" y="124" width="120" height="30" rx="5" fill="none" stroke="currentColor" opacity=".7"/>
+          <text x="916" y="143" text-anchor="middle">Excel — governed</text>
+        </g>
+
+        <g stroke="currentColor" fill="none" marker-end="url(#ar2)">
+          <line x1="116" y1="90" x2="138" y2="90"/>
+          <line x1="232" y1="90" x2="254" y2="90"/>
+        </g>
+        <g class="s-new" fill="none" marker-end="url(#arn)" stroke-width="1.8">
+          <line x1="348" y1="90" x2="370" y2="90"/>
+          <line x1="522" y1="90" x2="544" y2="90"/>
+          <line x1="638" y1="90" x2="660" y2="90"/>
+          <line x1="794" y1="90" x2="854" y2="90"/>
+        </g>
+        <text x="359" y="140" text-anchor="middle" font-size="9.5" class="t-new">defines once</text>
+        <text x="533" y="140" text-anchor="middle" font-size="9.5" class="t-new">reused by marts</text>
+        <text x="824" y="80" text-anchor="middle" font-size="9.5" class="t-new">single path</text>
+
+        <path d="M256 339 L230 339 L230 168 L592 168 L592 124" class="s-new" fill="none"
+              stroke-width="1.7" marker-end="url(#arn)"/>
+        <text x="240" y="160" font-size="10" class="t-new">promote into Gold — don't publish direct</text>
+
+        <rect x="256" y="196" width="538" height="76" rx="8" fill="none" class="s-new"
+              stroke-width="2.2" stroke-dasharray="7 4"/>
+        <text x="525" y="186" text-anchor="middle" font-size="10.5" class="t-new" font-weight="700">NEW — CROSS-CUTTING</text>
+        <text x="525" y="222" text-anchor="middle" font-size="12.5" class="t-new" font-weight="700">
+          Governance overlay — applied from Silver onward, inherited downstream</text>
+        <text x="525" y="244" text-anchor="middle" font-size="11" fill="currentColor" opacity=".85">
+          classify PHI/PII  →  object tags  →  tag-based column masking (CLS)  +  row access policies (RLS)</text>
+        <text x="525" y="262" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".7">
+          one policy definition, enforced everywhere the tagged column travels</text>
+
+        <rect x="256" y="306" width="248" height="66" rx="7" fill="none" stroke="currentColor" opacity=".8"/>
+        <text x="380" y="330" text-anchor="middle" font-size="12.5" fill="currentColor" font-weight="600">Workspace — governed</text>
+        <text x="380" y="347" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".75">masked PHI only · TTL on objects</text>
+        <text x="380" y="362" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".75">no direct path to BI</text>
+
+        <rect x="546" y="306" width="248" height="66" rx="7" fill="none" stroke="currentColor" opacity=".8"/>
+        <text x="670" y="330" text-anchor="middle" font-size="12.5" fill="currentColor" font-weight="600">Share — sole external exposure</text>
+        <text x="670" y="347" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".75">scoped per consumer</text>
+        <text x="670" y="362" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".75">masking inherited from tags</text>
+
+        <rect x="20" y="408" width="956" height="76" rx="8" fill="none" stroke="currentColor" opacity=".6"/>
+        <text x="498" y="432" text-anchor="middle" font-size="12" fill="currentColor" font-weight="600">
+          Account topology — phase 2</text>
+        <text x="498" y="453" text-anchor="middle" font-size="11" fill="currentColor" opacity=".8">
+          Separate Prod from Non-Prod at the account level; keep database partitioning within each.</text>
+        <text x="498" y="471" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".65">
+          Contains blast radius, isolates PHI, and makes credit attribution per environment real.</text>
+      </svg>
+      <figcaption><b>Target.</b> Everything drawn in teal is new; everything else is what Corewell
+        already runs. <b>Conformed Core</b> defines each business entity once so domain marts consume
+        rather than re-derive them. The <b>semantic layer</b> gives Tableau, Power BI and Excel a
+        single metric definition. The <b>governance overlay</b> attaches masking and row access to
+        tags at Silver, so protection follows the column everywhere it travels — including into
+        Workspace and Share.</figcaption>
+    </figure>
+
+    <div class="moves">
+      <div class="move">
+        <div class="mk">Structural move 1</div>
+        <h4>Define core entities once</h4>
+        <p>Stand up a conformed layer between Silver and Gold holding Patient, Provider, Encounter,
+          Facility and Payer. Central ownership, versioned in dbt, consumed by every domain mart.
+          This is the mechanism that makes "single source of truth" enforceable rather than aspirational.</p>
+      </div>
+      <div class="move">
+        <div class="mk">Structural move 2</div>
+        <h4>Put metrics above Gold, not inside BI</h4>
+        <p>Move business logic out of Tableau calculated fields and Power BI measures into a shared
+          semantic layer. The test: the same KPI queried from any tool returns the same number,
+          and changing its definition is a single edit.</p>
+      </div>
+      <div class="move">
+        <div class="mk">Structural move 3</div>
+        <h4>Attach protection to tags, not tables</h4>
+        <p>Classify PHI/PII at ingest, tag the columns, and bind masking and row access policies to
+          those tags at Silver. Protection then travels with the data into Gold, Share and Workspace
+          instead of being reapplied — and missed — per object.</p>
+      </div>
+      <div class="move">
+        <div class="mk">Supporting</div>
+        <h4>Close the bypass routes</h4>
+        <p>Give Workspace a real lifecycle — masked data only, TTL on objects, and a promotion path
+          into Gold. Make Share the only external exposure point. These remove the paths by which
+          ungoverned numbers currently reach a dashboard.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="s4">
+  <div class="wrap">
+    <p class="eyebrow"><span class="secnum">Section 4</span> · Sequencing</p>
+    <h2 class="sec-title">How to get there without stopping delivery</h2>
+    <p class="sec-lede">Each phase produces something demonstrable. The first two require no
+      platform change — they are discovery and a contained pilot, which also generate the evidence
+      the assessment workbook needs.</p>
+
+    <div class="seq">
+      <div class="ph">
+        <div class="when">Weeks 1–4</div>
+        <h4>Establish the facts</h4>
+        <ul>
+          <li>Inventory every definition of the core entities across domains</li>
+          <li>Catalogue where the same KPI disagrees between tools</li>
+          <li>PHI/PII column inventory and draft tag taxonomy</li>
+          <li>Close out Jay's tech-debt docs and Angela/Kevin's access</li>
+        </ul>
+      </div>
+      <div class="ph">
+        <div class="when">Weeks 5–8</div>
+        <h4>Prove it on one entity</h4>
+        <ul>
+          <li>Build the conformed Patient entity end to end</li>
+          <li>Repoint one existing Gold mart to consume it</li>
+          <li>Pilot tag-based masking and one row access policy</li>
+          <li>RBAC role hierarchy redesign, applied in sandbox</li>
+        </ul>
+      </div>
+      <div class="ph">
+        <div class="when">Weeks 9–12</div>
+        <h4>Make it the default</h4>
+        <ul>
+          <li>Semantic layer pilot across Tableau and Power BI</li>
+          <li>Workspace governance: TTL, masked-only, promotion path</li>
+          <li>Silver → Gold quality gates in dbt</li>
+          <li>Publish layer contracts as written standards</li>
+        </ul>
+      </div>
+      <div class="ph">
+        <div class="when">Quarter 2+</div>
+        <h4>Scale and harden</h4>
+        <ul>
+          <li>Roll conformed entities across remaining domains</li>
+          <li>Separate Prod from Non-Prod accounts</li>
+          <li>Catalog and lineage as the analyst discovery surface</li>
+          <li>DR: replication, failover group, first drill</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="s5">
+  <div class="wrap">
+    <p class="eyebrow"><span class="secnum">Section 5</span> · Before this is presented</p>
+    <h2 class="sec-title">Open questions to confirm with Corewell</h2>
+    <p class="sec-lede">Each of these was inferred from the architecture diagram rather than stated
+      in the call. Confirming them either removes a gap from the list or sharpens it.</p>
+
+    <div class="confirm">
+      <div class="cf"><span class="q">Q1</span><div class="t">
+        What is the <b>Common</b> layer for? If it already holds shared dimensions, the conformed-core
+        work may extend it rather than introduce a new layer.</div></div>
+      <div class="cf"><span class="q">Q2</span><div class="t">
+        Do Tableau, Power BI or Excel read from <b>Workspace or Silver</b> today, or only from
+        Gold/Share? This determines whether the bypass gap is real or theoretical.</div></div>
+      <div class="cf"><span class="q">Q3</span><div class="t">
+        Are any <b>masking or row access policies</b> already deployed? The call framed them as a
+        requirement — confirm nothing exists before reporting it as absent.</div></div>
+      <div class="cf"><span class="q">Q4</span><div class="t">
+        Is <b>Tableau</b> in the estate? The call named Excel and Power BI; the diagram shows Tableau.
+        It changes the BI-rationalization scope.</div></div>
+      <div class="cf"><span class="q">Q5</span><div class="t">
+        What <b>dbt tests and CI</b> run today? Determines whether quality gates are a new build or
+        an extension of existing practice.</div></div>
+      <div class="cf"><span class="q">Q6</span><div class="t">
+        Is there a defined <b>RTO/RPO</b>, or any replication configured? Sizes the DR gap.</div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div><b style="color:var(--ink)">Prepared by TEKsystems Team</b> · Corewell Health Snowflake DD&amp;A ·
+      Current-State Architecture Review &amp; Redesign Proposal, v1.0</div>
+    <div class="mono">Confidential · 11 gaps · 3 structural moves</div>
+  </div>
+</footer>
