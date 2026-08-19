@@ -39,53 +39,109 @@ ORDER BY d.DATABASE_NAME;
 
 
 /* ---------------------------------------------------------------------------
-   BLOCK 2 · Schema detail with inferred environment and layer
-   NOTE: the CASE expressions below encode assumed naming conventions.
-         Adjust to Corewell's actual convention before relying on the rollups.
+   BLOCK 2 · Database naming decode — CONFIRMED convention (2026-08-19 call)
+
+   Corewell confirmed the pattern is <ENV>_<LAYER>_<DOMAIN> for Bronze/Silver/
+   Gold databases (e.g. DEV_BRONZE_MHA, DEV_SILVER_MHA, DEV_GOLD_MHA), and a
+   separate <SH>_<DOMAIN> pattern for Shared (e.g. SH_MHA) that appears to drop
+   the environment segment — OPEN QUESTION: confirm whether SH_<DOMAIN> is
+   truly environment-agnostic (one Shared database serving Dev/Test/Prod) or
+   whether SH_MHA is just this account's only example so far and a PROD_ or
+   per-env Shared convention exists elsewhere. Ask Tim Burer directly.
+
+   This replaces the earlier schema-name-based guess (layer lived in the
+   SCHEMA under a shared database) — that assumption was wrong. Layer and
+   domain are both encoded in the DATABASE name; schemas within each database
+   are expected to be flatter (confirm during this pass).
    --------------------------------------------------------------------------- */
-WITH layer_map AS (
+WITH parsed AS (
     SELECT
-        s.CATALOG_NAME                      AS database_name,
-        s.SCHEMA_NAME,
-        s.SCHEMA_OWNER,
-        s.IS_TRANSIENT,
-        s.RETENTION_TIME,
-        s.CREATED,
-        s.LAST_ALTERED,
-        s.COMMENT,
+        d.DATABASE_NAME,
+        d.DATABASE_OWNER,
+        d.IS_TRANSIENT,
+        d.RETENTION_TIME                    AS time_travel_days,
+        d.CREATED,
+        d.LAST_ALTERED,
+        d.COMMENT,
         CASE
-            WHEN UPPER(s.CATALOG_NAME) LIKE '%PROD%' THEN 'PROD'
-            WHEN UPPER(s.CATALOG_NAME) LIKE '%TEST%'
-              OR UPPER(s.CATALOG_NAME) LIKE '%QA%'   THEN 'TEST'
-            WHEN UPPER(s.CATALOG_NAME) LIKE '%DEV%'  THEN 'DEV'
-            WHEN UPPER(s.CATALOG_NAME) LIKE '%SAND%' THEN 'SANDBOX'
-            ELSE 'UNCLASSIFIED'
-        END                                 AS env,
+            WHEN d.DATABASE_NAME REGEXP '^(DEV|TEST|QA|PROD)_(BRONZE|SILVER|GOLD)_.+$'
+                THEN REGEXP_SUBSTR(d.DATABASE_NAME, '^[A-Z]+', 1, 1)
+            WHEN d.DATABASE_NAME REGEXP '^SH_.+$'
+                THEN NULL   -- env not encoded in this pattern — see note above
+            ELSE NULL
+        END                                  AS env,
         CASE
-            WHEN UPPER(s.SCHEMA_NAME) LIKE '%BRONZE%'
-              OR UPPER(s.SCHEMA_NAME) LIKE '%RAW%'
-              OR UPPER(s.SCHEMA_NAME) LIKE '%LAND%'    THEN 'BRONZE'
-            WHEN UPPER(s.SCHEMA_NAME) LIKE '%SILVER%'
-              OR UPPER(s.SCHEMA_NAME) LIKE '%STAGE%'
-              OR UPPER(s.SCHEMA_NAME) LIKE '%CLEAN%'   THEN 'SILVER'
-            WHEN UPPER(s.SCHEMA_NAME) LIKE '%GOLD%'
-              OR UPPER(s.SCHEMA_NAME) LIKE '%MART%'
-              OR UPPER(s.SCHEMA_NAME) LIKE '%DW%'      THEN 'GOLD'
-            WHEN UPPER(s.SCHEMA_NAME) LIKE '%SHARE%'
-              OR UPPER(s.SCHEMA_NAME) LIKE '%REPORT%'
-              OR UPPER(s.SCHEMA_NAME) LIKE '%CONSUM%'  THEN 'SHARED'
-            WHEN UPPER(s.SCHEMA_NAME) LIKE '%COMMON%'  THEN 'COMMON'
-            WHEN UPPER(s.SCHEMA_NAME) LIKE '%WORK%'    THEN 'WORKSPACE'
-            ELSE 'OTHER'
-        END                                 AS layer
-    FROM SNOWFLAKE.ACCOUNT_USAGE.SCHEMATA s
-    WHERE s.DELETED IS NULL
-      AND s.SCHEMA_NAME <> 'INFORMATION_SCHEMA'
-      AND s.CATALOG_NAME LIKE $DB_PATTERN
+            WHEN d.DATABASE_NAME REGEXP '^(DEV|TEST|QA|PROD)_(BRONZE|SILVER|GOLD)_.+$'
+                THEN REGEXP_SUBSTR(d.DATABASE_NAME, '(BRONZE|SILVER|GOLD)', 1, 1)
+            WHEN d.DATABASE_NAME REGEXP '^SH_.+$' THEN 'SHARED'
+            ELSE NULL
+        END                                  AS layer,
+        CASE
+            WHEN d.DATABASE_NAME REGEXP '^(DEV|TEST|QA|PROD)_(BRONZE|SILVER|GOLD)_.+$'
+                THEN REGEXP_SUBSTR(d.DATABASE_NAME, '[^_]+$')
+            WHEN d.DATABASE_NAME REGEXP '^SH_.+$'
+                THEN REGEXP_SUBSTR(d.DATABASE_NAME, '^SH_(.+)$', 1, 1, 'e')
+            ELSE NULL
+        END                                  AS domain,
+        IFF(d.DATABASE_NAME REGEXP '^(DEV|TEST|QA|PROD)_(BRONZE|SILVER|GOLD)_.+$|^SH_.+$',
+            'MATCHED', 'UNCLASSIFIED — review naming')  AS convention_match
+    FROM SNOWFLAKE.ACCOUNT_USAGE.DATABASES d
+    WHERE d.DELETED IS NULL
+      AND d.DATABASE_NAME LIKE $DB_PATTERN
 )
-SELECT *
-FROM layer_map
-ORDER BY env, layer, database_name, SCHEMA_NAME;
+SELECT * FROM parsed
+ORDER BY convention_match, domain, layer, env;
+
+
+/* ---------------------------------------------------------------------------
+   BLOCK 2b · DOMAIN × LAYER × ENVIRONMENT COVERAGE MATRIX   ** key output **
+
+   Directly tests the hypothesis raised on the 2026-08-19 call: that Bronze/
+   Silver/Gold are siloed per source domain (MHA, and presumably EPIC, STRATA,
+   TRILLIANT...) with no cross-domain conformed layer today. One row per
+   domain; Y/N per layer/env combination found. A domain with Bronze+Silver+
+   Gold but every other domain missing entirely confirms the silo is real and
+   MHA-only so far; multiple domains each with their own complete Bronze→Gold
+   stack confirms the silo pattern is systemic, not MHA-specific.
+   --------------------------------------------------------------------------- */
+WITH parsed AS (
+    SELECT
+        d.DATABASE_NAME,
+        CASE
+            WHEN d.DATABASE_NAME REGEXP '^(DEV|TEST|QA|PROD)_(BRONZE|SILVER|GOLD)_.+$'
+                THEN REGEXP_SUBSTR(d.DATABASE_NAME, '^[A-Z]+', 1, 1)
+            WHEN d.DATABASE_NAME REGEXP '^SH_.+$' THEN '(unscoped)'
+            ELSE 'UNCLASSIFIED'
+        END AS env,
+        CASE
+            WHEN d.DATABASE_NAME REGEXP '^(DEV|TEST|QA|PROD)_(BRONZE|SILVER|GOLD)_.+$'
+                THEN REGEXP_SUBSTR(d.DATABASE_NAME, '(BRONZE|SILVER|GOLD)', 1, 1)
+            WHEN d.DATABASE_NAME REGEXP '^SH_.+$' THEN 'SHARED'
+            ELSE 'UNCLASSIFIED'
+        END AS layer,
+        CASE
+            WHEN d.DATABASE_NAME REGEXP '^(DEV|TEST|QA|PROD)_(BRONZE|SILVER|GOLD)_.+$'
+                THEN REGEXP_SUBSTR(d.DATABASE_NAME, '[^_]+$')
+            WHEN d.DATABASE_NAME REGEXP '^SH_.+$'
+                THEN REGEXP_SUBSTR(d.DATABASE_NAME, '^SH_(.+)$', 1, 1, 'e')
+            ELSE 'UNCLASSIFIED'
+        END AS domain
+    FROM SNOWFLAKE.ACCOUNT_USAGE.DATABASES d
+    WHERE d.DELETED IS NULL
+      AND d.DATABASE_NAME LIKE $DB_PATTERN
+)
+SELECT
+    domain,
+    env,
+    MAX(IFF(layer = 'BRONZE', 'Y', 'N')) AS has_bronze,
+    MAX(IFF(layer = 'SILVER', 'Y', 'N')) AS has_silver,
+    MAX(IFF(layer = 'GOLD',   'Y', 'N')) AS has_gold,
+    MAX(IFF(layer = 'SHARED', 'Y', 'N')) AS has_shared,
+    COUNT(*)                             AS databases_found
+FROM parsed
+WHERE domain <> 'UNCLASSIFIED'
+GROUP BY ALL
+ORDER BY domain, env;
 
 
 /* ---------------------------------------------------------------------------

@@ -11,7 +11,13 @@
    ============================================================================ */
 
 -- ---------------------------------------------------------------- CONFIGURE
--- Set these to Corewell's actual database names before running.
+-- CONFIRMED (2026-08-19 call): databases follow <ENV>_<LAYER>_<DOMAIN>, e.g.
+-- DEV_GOLD_MHA / PROD_GOLD_MHA. There is no single "DEV database" or "PROD
+-- database" — each domain × layer combination is its own database, repeated
+-- per environment. Blocks 2b/3b/4b below compare same layer+domain pairs
+-- (e.g. DEV_GOLD_MHA vs PROD_GOLD_MHA) dynamically, with no hardcoding
+-- needed. Blocks 2/3/4 are kept as a fallback for any account that also uses
+-- a flat DEV_DB/PROD_DB pattern elsewhere — set these only if that applies.
 SET DEV_DB  = 'DEV_DB';
 SET TEST_DB = 'TEST_DB';
 SET PROD_DB = 'PROD_DB';
@@ -190,3 +196,108 @@ WHERE DELETED_ON IS NULL
   AND TABLE_CATALOG IS NOT NULL
 GROUP BY ALL
 ORDER BY role_name, environment, GRANTED_ON;
+
+
+/* =============================================================================
+   NAMING-CONVENTION-AWARE BLOCKS (2b / 3b / 4b)
+   Use these instead of 2/3/4 — no SET variables needed. Pairs are formed
+   dynamically from the confirmed <ENV>_<LAYER>_<DOMAIN> pattern, so every
+   domain (MHA, and any others already provisioned) is checked automatically,
+   for every environment present, without editing this script per domain.
+   ============================================================================= */
+
+/* ---------------------------------------------------------------------------
+   BLOCK 2b · Objects present in PROD but missing from DEV — per layer+domain
+   --------------------------------------------------------------------------- */
+WITH parsed AS (
+    SELECT
+        t.TABLE_CATALOG, t.TABLE_SCHEMA, t.TABLE_NAME, t.TABLE_TYPE, t.ROW_COUNT,
+        REGEXP_SUBSTR(t.TABLE_CATALOG, '^[A-Z]+', 1, 1)               AS env,
+        REGEXP_SUBSTR(t.TABLE_CATALOG, '(BRONZE|SILVER|GOLD)', 1, 1)  AS layer,
+        REGEXP_SUBSTR(t.TABLE_CATALOG, '[^_]+$')                      AS domain
+    FROM SNOWFLAKE.ACCOUNT_USAGE.TABLES t
+    WHERE t.DELETED IS NULL
+      AND t.TABLE_SCHEMA <> 'INFORMATION_SCHEMA'
+      AND t.TABLE_CATALOG REGEXP '^(DEV|PROD)_(BRONZE|SILVER|GOLD)_.+$'
+),
+prod AS (SELECT * FROM parsed WHERE env = 'PROD'),
+dev  AS (SELECT * FROM parsed WHERE env = 'DEV')
+SELECT p.layer, p.domain, p.TABLE_CATALOG AS prod_database, p.TABLE_SCHEMA, p.TABLE_NAME,
+       p.TABLE_TYPE, p.ROW_COUNT, 'IN PROD, MISSING FROM DEV (same layer+domain)' AS finding
+FROM prod p
+LEFT JOIN dev d
+       ON d.layer = p.layer AND d.domain = p.domain
+      AND d.TABLE_SCHEMA = p.TABLE_SCHEMA AND d.TABLE_NAME = p.TABLE_NAME
+WHERE d.TABLE_NAME IS NULL
+ORDER BY p.domain, p.layer, p.TABLE_SCHEMA, p.TABLE_NAME;
+
+
+/* ---------------------------------------------------------------------------
+   BLOCK 3b · Objects present in DEV but not yet promoted to PROD
+   --------------------------------------------------------------------------- */
+WITH parsed AS (
+    SELECT
+        t.TABLE_CATALOG, t.TABLE_SCHEMA, t.TABLE_NAME, t.TABLE_TYPE, t.ROW_COUNT, t.LAST_ALTERED,
+        REGEXP_SUBSTR(t.TABLE_CATALOG, '^[A-Z]+', 1, 1)               AS env,
+        REGEXP_SUBSTR(t.TABLE_CATALOG, '(BRONZE|SILVER|GOLD)', 1, 1)  AS layer,
+        REGEXP_SUBSTR(t.TABLE_CATALOG, '[^_]+$')                      AS domain
+    FROM SNOWFLAKE.ACCOUNT_USAGE.TABLES t
+    WHERE t.DELETED IS NULL
+      AND t.TABLE_SCHEMA <> 'INFORMATION_SCHEMA'
+      AND t.TABLE_CATALOG REGEXP '^(DEV|PROD)_(BRONZE|SILVER|GOLD)_.+$'
+),
+prod AS (SELECT * FROM parsed WHERE env = 'PROD'),
+dev  AS (SELECT * FROM parsed WHERE env = 'DEV')
+SELECT d.layer, d.domain, d.TABLE_CATALOG AS dev_database, d.TABLE_SCHEMA, d.TABLE_NAME,
+       d.TABLE_TYPE, d.ROW_COUNT, d.LAST_ALTERED,
+       DATEDIFF('day', d.LAST_ALTERED, CURRENT_TIMESTAMP()) AS days_since_change,
+       'IN DEV, NOT YET IN PROD (same layer+domain)' AS finding
+FROM dev d
+LEFT JOIN prod p
+       ON p.layer = d.layer AND p.domain = d.domain
+      AND p.TABLE_SCHEMA = d.TABLE_SCHEMA AND p.TABLE_NAME = d.TABLE_NAME
+WHERE p.TABLE_NAME IS NULL
+ORDER BY days_since_change DESC;
+
+
+/* ---------------------------------------------------------------------------
+   BLOCK 4b · Column-level schema drift between DEV and PROD, per layer+domain
+   --------------------------------------------------------------------------- */
+WITH parsed_cols AS (
+    SELECT
+        c.TABLE_CATALOG, c.TABLE_SCHEMA, c.TABLE_NAME, c.COLUMN_NAME, c.DATA_TYPE, c.IS_NULLABLE,
+        REGEXP_SUBSTR(c.TABLE_CATALOG, '^[A-Z]+', 1, 1)               AS env,
+        REGEXP_SUBSTR(c.TABLE_CATALOG, '(BRONZE|SILVER|GOLD)', 1, 1)  AS layer,
+        REGEXP_SUBSTR(c.TABLE_CATALOG, '[^_]+$')                      AS domain
+    FROM SNOWFLAKE.ACCOUNT_USAGE.COLUMNS c
+    WHERE c.DELETED IS NULL
+      AND c.TABLE_SCHEMA <> 'INFORMATION_SCHEMA'
+      AND c.TABLE_CATALOG REGEXP '^(DEV|PROD)_(BRONZE|SILVER|GOLD)_.+$'
+),
+dev_cols  AS (SELECT * FROM parsed_cols WHERE env = 'DEV'),
+prod_cols AS (SELECT * FROM parsed_cols WHERE env = 'PROD')
+SELECT
+    COALESCE(d.layer, p.layer)                 AS layer,
+    COALESCE(d.domain, p.domain)                AS domain,
+    COALESCE(d.TABLE_SCHEMA, p.TABLE_SCHEMA)    AS table_schema,
+    COALESCE(d.TABLE_NAME,   p.TABLE_NAME)      AS table_name,
+    COALESCE(d.COLUMN_NAME,  p.COLUMN_NAME)     AS column_name,
+    d.DATA_TYPE                                 AS dev_data_type,
+    p.DATA_TYPE                                 AS prod_data_type,
+    CASE
+        WHEN d.COLUMN_NAME IS NULL              THEN 'COLUMN ONLY IN PROD'
+        WHEN p.COLUMN_NAME IS NULL              THEN 'COLUMN ONLY IN DEV'
+        WHEN d.DATA_TYPE <> p.DATA_TYPE         THEN 'DATA TYPE MISMATCH'
+        WHEN d.IS_NULLABLE <> p.IS_NULLABLE     THEN 'NULLABILITY MISMATCH'
+    END                                         AS drift_type
+FROM dev_cols d
+FULL OUTER JOIN prod_cols p
+       ON  p.layer = d.layer AND p.domain = d.domain
+       AND p.TABLE_SCHEMA = d.TABLE_SCHEMA
+       AND p.TABLE_NAME   = d.TABLE_NAME
+       AND p.COLUMN_NAME  = d.COLUMN_NAME
+WHERE d.COLUMN_NAME IS NULL
+   OR p.COLUMN_NAME IS NULL
+   OR d.DATA_TYPE   <> p.DATA_TYPE
+   OR d.IS_NULLABLE <> p.IS_NULLABLE
+ORDER BY drift_type, domain, layer, table_schema, table_name, column_name;

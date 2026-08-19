@@ -1,9 +1,41 @@
 # Corewell Health — Snowflake Metadata Extraction Pack
 
-**Prepared by TEKsystems Team (TGS)** · Corewell Health Snowflake DD&A · v1.0
+**Prepared by TEKsystems Team (TGS)** · Corewell Health Snowflake DD&A · v1.1
 
 Read-only metadata extraction to establish the current-state baseline for the
 Strategy & Market Intelligence data model engagement.
+
+---
+
+## Confirmed since v1.0 (2026-08-19 call)
+
+Five facts were confirmed that change how these scripts classify objects:
+
+1. **Shared is views** over Gold, built for reporting.
+2. **Gold holds actual data, with history** (durable, not pass-through).
+3. **Database naming is `<ENV>_<LAYER>_<DOMAIN>`** for Bronze/Silver/Gold —
+   e.g. `DEV_BRONZE_MHA`, `DEV_SILVER_MHA`, `DEV_GOLD_MHA` — and `<SH>_<DOMAIN>`
+   for Shared, e.g. `SH_MHA`. **Layer and domain live in the database name, not
+   the schema name.** Scripts `01`, `04`, and `07` have been rewritten to parse
+   this pattern directly (`REGEXP_SUBSTR` on `DATABASE_NAME`) instead of
+   guessing from schema names — the earlier schema-based heuristic was wrong
+   for this account and has been replaced, not just supplemented.
+4. **The Shared views carry no filtering logic** — confirmed as
+   `CREATE VIEW ... AS SELECT * FROM GOLD...` with no `WHERE`, no masking
+   expressions in the view body itself.
+5. **Masking/RLS policies exist but are not yet confirmed** as correctly
+   attached or enforced.
+
+**Facts 4 + 5 together are the most urgent open item.** A bare view has no
+protection of its own — whatever governs PHI exposure at Shared must come
+entirely from Snowflake policy objects attached upstream, and that attachment
+is unverified. Until `03` Blocks 3 and 5 are run, **treat PHI protection at
+Shared as unconfirmed, not as present.**
+
+**Open question for Tim Burer:** does `SH_<DOMAIN>` (no env prefix) mean one
+Shared database serves all environments, or is this simply the only Shared
+example seen so far and a per-env pattern exists elsewhere? `01` Block 2b
+surfaces every Shared database found so this can be checked directly.
 
 ---
 
@@ -52,22 +84,25 @@ SET DB_PATTERN = '%';        -- all databases
 -- SET DB_PATTERN = 'PROD%'; -- production only
 ```
 
-Layer classification (Bronze / Silver / Gold / Shared) is derived from schema and
-database naming. If Corewell's naming differs, adjust the `CASE` expression in the
-`layer_map` CTE — it appears in `01` and is reused conceptually elsewhere.
+Layer and domain classification (Bronze/Silver/Gold/Shared × MHA/Epic/Strata/...)
+is now derived from the **confirmed** `<ENV>_<LAYER>_<DOMAIN>` / `<SH>_<DOMAIN>`
+database naming pattern in `01`, `04`, and `07`. If any database doesn't match
+this pattern, it falls into an `UNCLASSIFIED` bucket in the results rather than
+being silently mis-tagged — check that bucket for anything unexpected (it may
+mean a domain besides MHA uses different conventions, worth flagging).
 
-## Execution order
+## Execution order — updated priority given the 08-19 findings
 
-| # | Script | Answers |
-|---|---|---|
-| 01 | `01_object_inventory.sql` | What exists, how big, in which layer and environment |
-| 02 | `02_column_profiling.sql` | What columns exist, candidate keys/grain, **PHI/PII candidates** |
-| 03 | `03_governance_security.sql` | Masking, row access, tags, roles, grants |
-| 04 | `04_lineage_dependencies.sql` | What depends on what; source→report paths |
-| 05 | `05_usage_activity.sql` | What is actually queried; what is dead; what it costs |
-| 06 | `06_pipeline_freshness.sql` | Load history (Fivetran/GoAnywhere), tasks, staleness |
-| 07 | `07_environment_drift.sql` | Dev vs Test vs Prod differences |
-| 08 | `08_optional_data_profiling.sql` | **Opt-in.** Real cardinality/null rates for grain confirmation |
+| # | Script | Answers | Priority |
+|---|---|---|---|
+| 01 | `01_object_inventory.sql` | What exists, how big; **Block 2b: domain × layer × env coverage matrix** — tests whether Bronze/Silver/Gold are siloed per domain | **Run first** |
+| 03 | `03_governance_security.sql` | Masking, row access, tags, roles, grants — **Blocks 3 & 5 resolve the unconfirmed-policy question directly** | **Run second, most urgent** |
+| 02 | `02_column_profiling.sql` | What columns exist, candidate keys/grain, **PHI/PII candidates** | |
+| 04 | `04_lineage_dependencies.sql` | Dependencies; **now checks both layer-skips and cross-domain edges** — confirms Shared reads only Gold, and whether any domain already crosses into another | |
+| 05 | `05_usage_activity.sql` | What is actually queried; what is dead; what it costs | |
+| 06 | `06_pipeline_freshness.sql` | Load history (Fivetran/GoAnywhere), tasks, staleness | |
+| 07 | `07_environment_drift.sql` | Dev vs Prod differences — **use Blocks 2b/3b/4b**, which pair databases by layer+domain automatically | |
+| 08 | `08_optional_data_profiling.sql` | **Opt-in.** Real cardinality/null rates for grain confirmation | |
 
 ## ACCOUNT_USAGE latency
 
@@ -84,22 +119,29 @@ Run each numbered query block separately in Snowsight and export via
 
 Please return, at minimum:
 
-1. `01` — all blocks (baseline inventory)
-2. `02` — blocks 1, 4, 5 (columns, PHI candidates, key candidates)
-3. `03` — all blocks (governance — needed for the Tim Burer session)
-4. `06` — block 2 (load history — confirms Fivetran/GoAnywhere behaviour)
+1. `01` — all blocks, **especially 2b** (domain × layer × env coverage matrix)
+2. `03` — all blocks, **especially 3 & 5** (policy attachment + unprotected PHI — resolves the open item from the 08-19 call)
+3. `02` — blocks 1, 4, 5 (columns, PHI candidates, key candidates)
+4. `04` — block 2 and the cross-domain edges query (confirms Shared→Gold-only and domain silo)
+5. `06` — block 2 (load history — confirms Fivetran/GoAnywhere behaviour)
 
 If any script fails on privileges, send the error text rather than the results and we
 will supply a reduced-scope version.
 
 ## Open items these scripts are designed to resolve
 
+- **Are masking/RLS policies actually attached to Gold/Shared objects?** — the
+  single most urgent question after the 08-19 call. `03` Blocks 3 & 5.
+- **Is `SH_<DOMAIN>` environment-agnostic**, or does a per-env Shared pattern
+  exist elsewhere? `01` Block 2b.
+- **Are Bronze/Silver/Gold genuinely siloed per domain**, with zero cross-domain
+  conformance today? `01` Block 2b, `04`'s cross-domain edges query.
 - Whether Epic lands via **Clarity** or **Caboodle** (visible in source object naming — `01`, `06`)
-- Purpose of the **`Common`** and **`Workspace`** schemas seen in the architecture diagram (`01`, `05`)
-- Whether **masking is role-based or tag-based**, and where it is enforced (`03`)
+- Purpose of the **`Common`** and **`Workspace`** schemas seen in the architecture diagram — do
+  they exist in this account at all, or were they specific to the diagram's illustrative example? (`01`, `05`)
 - Whether BI tools read only from **Shared**, or reach into Gold/Silver directly (`04`, `05`)
 - Grain of Epic vs MHA vs Strata objects, for the conceptual model (`02`, `08`)
-- Dev/Test/Prod completeness — Prod was described as most complete (`07`)
+- Dev vs Prod completeness — Prod was described as most complete (`07`)
 
 ---
 

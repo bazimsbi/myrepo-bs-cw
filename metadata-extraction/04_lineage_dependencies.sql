@@ -35,51 +35,62 @@ ORDER BY child_database, child_schema, child_object, parent_schema, parent_objec
 
 /* ---------------------------------------------------------------------------
    BLOCK 2 · Cross-layer dependency map   ** key architectural finding **
-   Classifies each dependency edge by the layers it connects, then flags edges
-   that skip the medallion progression (e.g. SHARED reading straight from
-   BRONZE, or a report object reading SILVER).
 
-   This is the query that confirms or refutes whether Shared is genuinely the
-   only consumption layer.
+   CONFIRMED (2026-08-19 call): layer and domain are encoded in the DATABASE
+   name as <ENV>_<LAYER>_<DOMAIN> (e.g. DEV_GOLD_MHA) with Shared as <SH>_
+   <DOMAIN> (e.g. SH_MHA). Classification below reads the DATABASE name, not
+   the schema — the earlier schema-based version was wrong for this account.
+
+   Two independent things are checked per edge:
+     · LAYER  progression — does a Shared view sit only on Gold (expected),
+       or does something read Bronze/Silver directly (a real bypass)?
+     · DOMAIN crossing — does anything already join across domains (e.g. a
+       GOLD_MHA object referencing GOLD_EPIC)? On the 2026-08-19 call no
+       cross-domain conformance was described; zero cross-domain edges here
+       would corroborate that domains are fully siloed today.
    --------------------------------------------------------------------------- */
 WITH layered AS (
     SELECT
-        REFERENCING_DATABASE   AS child_db,
-        REFERENCING_SCHEMA     AS child_schema,
+        REFERENCING_DATABASE    AS child_db,
+        REFERENCING_SCHEMA      AS child_schema,
         REFERENCING_OBJECT_NAME AS child_object,
-        REFERENCED_DATABASE    AS parent_db,
-        REFERENCED_SCHEMA      AS parent_schema,
-        REFERENCED_OBJECT_NAME AS parent_object,
+        REFERENCED_DATABASE     AS parent_db,
+        REFERENCED_SCHEMA       AS parent_schema,
+        REFERENCED_OBJECT_NAME  AS parent_object,
         CASE
-            WHEN UPPER(REFERENCING_SCHEMA) REGEXP '.*(BRONZE|RAW|LAND).*'      THEN 1
-            WHEN UPPER(REFERENCING_SCHEMA) REGEXP '.*(SILVER|STAGE|CLEAN).*'   THEN 2
-            WHEN UPPER(REFERENCING_SCHEMA) REGEXP '.*(GOLD|MART|DW).*'         THEN 3
-            WHEN UPPER(REFERENCING_SCHEMA) REGEXP '.*(SHARE|REPORT|CONSUM).*'  THEN 4
+            WHEN REFERENCING_DATABASE REGEXP '^(DEV|TEST|QA|PROD)_BRONZE_.+$' THEN 1
+            WHEN REFERENCING_DATABASE REGEXP '^(DEV|TEST|QA|PROD)_SILVER_.+$' THEN 2
+            WHEN REFERENCING_DATABASE REGEXP '^(DEV|TEST|QA|PROD)_GOLD_.+$'   THEN 3
+            WHEN REFERENCING_DATABASE REGEXP '^SH_.+$'                       THEN 4
             ELSE 0
         END AS child_layer,
         CASE
-            WHEN UPPER(REFERENCED_SCHEMA) REGEXP '.*(BRONZE|RAW|LAND).*'       THEN 1
-            WHEN UPPER(REFERENCED_SCHEMA) REGEXP '.*(SILVER|STAGE|CLEAN).*'    THEN 2
-            WHEN UPPER(REFERENCED_SCHEMA) REGEXP '.*(GOLD|MART|DW).*'          THEN 3
-            WHEN UPPER(REFERENCED_SCHEMA) REGEXP '.*(SHARE|REPORT|CONSUM).*'   THEN 4
+            WHEN REFERENCED_DATABASE REGEXP '^(DEV|TEST|QA|PROD)_BRONZE_.+$' THEN 1
+            WHEN REFERENCED_DATABASE REGEXP '^(DEV|TEST|QA|PROD)_SILVER_.+$' THEN 2
+            WHEN REFERENCED_DATABASE REGEXP '^(DEV|TEST|QA|PROD)_GOLD_.+$'   THEN 3
+            WHEN REFERENCED_DATABASE REGEXP '^SH_.+$'                       THEN 4
             ELSE 0
-        END AS parent_layer
+        END AS parent_layer,
+        REGEXP_SUBSTR(REFERENCING_DATABASE, '[^_]+$') AS child_domain,
+        REGEXP_SUBSTR(REFERENCED_DATABASE,  '[^_]+$') AS parent_domain
     FROM SNOWFLAKE.ACCOUNT_USAGE.OBJECT_DEPENDENCIES
     WHERE REFERENCING_DATABASE LIKE $DB_PATTERN
 )
 SELECT
     child_layer, parent_layer,
     CASE
-        WHEN child_layer = 0 OR parent_layer = 0        THEN 'UNCLASSIFIED SCHEMA'
+        WHEN child_layer = 0 OR parent_layer = 0        THEN 'UNCLASSIFIED DATABASE — review naming'
         WHEN child_layer = parent_layer                 THEN 'INTRA-LAYER'
         WHEN child_layer = parent_layer + 1             THEN 'NORMAL PROGRESSION'
-        WHEN child_layer > parent_layer + 1             THEN 'LAYER SKIP — review'
+        WHEN child_layer > parent_layer + 1             THEN 'LAYER SKIP — review (e.g. Shared reading Bronze/Silver)'
         ELSE 'REVERSE FLOW — review'
     END                                                 AS edge_classification,
+    IFF(child_domain = parent_domain, 'SAME DOMAIN', 'CROSS-DOMAIN — investigate')
+                                                         AS domain_classification,
     COUNT(*)                                            AS edge_count
 FROM layered
 GROUP BY ALL
-ORDER BY edge_classification, edge_count DESC;
+ORDER BY edge_classification, domain_classification, edge_count DESC;
 
 -- The individual layer-skipping edges, for follow-up
 WITH layered AS (
@@ -89,16 +100,16 @@ WITH layered AS (
         REFERENCED_DATABASE AS parent_db, REFERENCED_SCHEMA AS parent_schema,
         REFERENCED_OBJECT_NAME AS parent_object,
         CASE
-            WHEN UPPER(REFERENCING_SCHEMA) REGEXP '.*(BRONZE|RAW|LAND).*'     THEN 1
-            WHEN UPPER(REFERENCING_SCHEMA) REGEXP '.*(SILVER|STAGE|CLEAN).*'  THEN 2
-            WHEN UPPER(REFERENCING_SCHEMA) REGEXP '.*(GOLD|MART|DW).*'        THEN 3
-            WHEN UPPER(REFERENCING_SCHEMA) REGEXP '.*(SHARE|REPORT|CONSUM).*' THEN 4
+            WHEN REFERENCING_DATABASE REGEXP '^(DEV|TEST|QA|PROD)_BRONZE_.+$' THEN 1
+            WHEN REFERENCING_DATABASE REGEXP '^(DEV|TEST|QA|PROD)_SILVER_.+$' THEN 2
+            WHEN REFERENCING_DATABASE REGEXP '^(DEV|TEST|QA|PROD)_GOLD_.+$'   THEN 3
+            WHEN REFERENCING_DATABASE REGEXP '^SH_.+$'                       THEN 4
             ELSE 0 END AS child_layer,
         CASE
-            WHEN UPPER(REFERENCED_SCHEMA) REGEXP '.*(BRONZE|RAW|LAND).*'      THEN 1
-            WHEN UPPER(REFERENCED_SCHEMA) REGEXP '.*(SILVER|STAGE|CLEAN).*'   THEN 2
-            WHEN UPPER(REFERENCED_SCHEMA) REGEXP '.*(GOLD|MART|DW).*'         THEN 3
-            WHEN UPPER(REFERENCED_SCHEMA) REGEXP '.*(SHARE|REPORT|CONSUM).*'  THEN 4
+            WHEN REFERENCED_DATABASE REGEXP '^(DEV|TEST|QA|PROD)_BRONZE_.+$' THEN 1
+            WHEN REFERENCED_DATABASE REGEXP '^(DEV|TEST|QA|PROD)_SILVER_.+$' THEN 2
+            WHEN REFERENCED_DATABASE REGEXP '^(DEV|TEST|QA|PROD)_GOLD_.+$'   THEN 3
+            WHEN REFERENCED_DATABASE REGEXP '^SH_.+$'                       THEN 4
             ELSE 0 END AS parent_layer
     FROM SNOWFLAKE.ACCOUNT_USAGE.OBJECT_DEPENDENCIES
     WHERE REFERENCING_DATABASE LIKE $DB_PATTERN
@@ -109,6 +120,23 @@ FROM layered
 WHERE child_layer > 0 AND parent_layer > 0
   AND child_layer > parent_layer + 1
 ORDER BY child_layer DESC, child_schema, child_object;
+
+-- The individual cross-domain edges, for follow-up — should be near-zero
+-- today per the "no unified model" finding; any hits are worth a direct look
+WITH layered AS (
+    SELECT
+        REFERENCING_DATABASE AS child_db, REFERENCING_OBJECT_NAME AS child_object,
+        REFERENCED_DATABASE  AS parent_db, REFERENCED_OBJECT_NAME AS parent_object,
+        REGEXP_SUBSTR(REFERENCING_DATABASE, '[^_]+$') AS child_domain,
+        REGEXP_SUBSTR(REFERENCED_DATABASE,  '[^_]+$') AS parent_domain
+    FROM SNOWFLAKE.ACCOUNT_USAGE.OBJECT_DEPENDENCIES
+    WHERE REFERENCING_DATABASE LIKE $DB_PATTERN
+      AND (REFERENCING_DATABASE REGEXP '^(DEV|TEST|QA|PROD)_(BRONZE|SILVER|GOLD)_.+$|^SH_.+$')
+      AND (REFERENCED_DATABASE  REGEXP '^(DEV|TEST|QA|PROD)_(BRONZE|SILVER|GOLD)_.+$|^SH_.+$')
+)
+SELECT * FROM layered
+WHERE child_domain <> parent_domain
+ORDER BY child_domain, parent_domain;
 
 
 /* ---------------------------------------------------------------------------
