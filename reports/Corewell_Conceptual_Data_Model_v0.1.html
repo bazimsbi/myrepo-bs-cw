@@ -1,0 +1,521 @@
+<title>Corewell Enterprise Data Model — Conceptual Draft</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{
+  --ground:#F4F7F8; --panel:#FFFFFF; --panel-2:#E9F0F1; --inset:#F0F5F6;
+  --ink:#0C2A2E; --body:#2C4A4D; --muted:#5F7C7E; --hair:#CFDFE0;
+  --teal:#0F766E; --blue:#0369A1; --accent-soft:#D6ECEA;
+  --bronze:#A96A33; --silver:#7C8B92; --gold:#B08A17;
+  --crit:#C0342B; --crit-bg:#FBE9E7;
+  --high:#C25A18; --high-bg:#FCEEE3;
+  --med:#8A6D0F;  --med-bg:#FAF3DE;
+  --ok:#0F766E;   --ok-bg:#DDF0EE;
+  --mha:#0369A1;  --mha-bg:#E4F0F9;
+  --tri:#B08A17;  --tri-bg:#FBF3DC;
+  --shadow:0 1px 2px rgba(12,42,46,.05),0 6px 18px rgba(12,42,46,.06);
+  --mono:ui-monospace,"SF Mono","Cascadia Code","JetBrains Mono",Menlo,Consolas,monospace;
+  --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0A171A; --panel:#102327; --panel-2:#162E32; --inset:#14292D;
+    --ink:#E8F3F2; --body:#B8D0D0; --muted:#7C9B9B; --hair:#22423F;
+    --teal:#41BFB0; --blue:#5CB8E6; --accent-soft:#183B39;
+    --bronze:#D08F52; --silver:#9EAFB6; --gold:#D6AC33;
+    --crit:#F08C82; --crit-bg:#3A1D1A;
+    --high:#F0A167; --high-bg:#3A2617;
+    --med:#DCC062;  --med-bg:#332C13;
+    --ok:#41BFB0;   --ok-bg:#14332F;
+    --mha:#5CB8E6;  --mha-bg:#122A38;
+    --tri:#D6AC33;  --tri-bg:#332B12;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0A171A; --panel:#102327; --panel-2:#162E32; --inset:#14292D;
+  --ink:#E8F3F2; --body:#B8D0D0; --muted:#7C9B9B; --hair:#22423F;
+  --teal:#41BFB0; --blue:#5CB8E6; --accent-soft:#183B39;
+  --bronze:#D08F52; --silver:#9EAFB6; --gold:#D6AC33;
+  --crit:#F08C82; --crit-bg:#3A1D1A;
+  --high:#F0A167; --high-bg:#3A2617;
+  --med:#DCC062;  --med-bg:#332C13;
+  --ok:#41BFB0;   --ok-bg:#14332F;
+  --mha:#5CB8E6;  --mha-bg:#122A38;
+  --tri:#D6AC33;  --tri-bg:#332B12;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+}
+:root[data-theme="light"]{
+  --ground:#F4F7F8; --panel:#FFFFFF; --panel-2:#E9F0F1; --inset:#F0F5F6;
+  --ink:#0C2A2E; --body:#2C4A4D; --muted:#5F7C7E; --hair:#CFDFE0;
+  --teal:#0F766E; --blue:#0369A1; --accent-soft:#D6ECEA;
+  --bronze:#A96A33; --silver:#7C8B92; --gold:#B08A17;
+  --crit:#C0342B; --crit-bg:#FBE9E7;
+  --high:#C25A18; --high-bg:#FCEEE3;
+  --med:#8A6D0F;  --med-bg:#FAF3DE;
+  --ok:#0F766E;   --ok-bg:#DDF0EE;
+  --mha:#0369A1;  --mha-bg:#E4F0F9;
+  --tri:#B08A17;  --tri-bg:#FBF3DC;
+  --shadow:0 1px 2px rgba(12,42,46,.05),0 6px 18px rgba(12,42,46,.06);
+}
+*{box-sizing:border-box}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+body{margin:0;background:var(--ground);color:var(--body);font-family:var(--sans);
+  font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1120px;margin:0 auto;padding:0 28px}
+h1,h2,h3,h4{color:var(--ink);text-wrap:balance;margin:0;line-height:1.2}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--teal);font-weight:600;margin:0}
+code,.mono{font-family:var(--mono)}
+a{color:var(--blue)}
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:3px}
+
+.rulebar{height:4px;background:linear-gradient(90deg,var(--teal),var(--blue) 55%,var(--gold))}
+header.masthead{border-bottom:1px solid var(--hair);background:var(--panel)}
+header.masthead .wrap{padding-top:34px;padding-bottom:30px}
+header.masthead h1{font-size:clamp(26px,4vw,40px);letter-spacing:-.018em;font-weight:700;margin:12px 0 0}
+.sub{font-size:clamp(15px,2vw,18px);color:var(--body);max-width:70ch;margin:14px 0 0}
+.byline{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-top:8px}
+.byline .org{font-weight:700;color:var(--ink);font-size:15px}
+.byline .role{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+
+.docctl{margin-top:26px;border:1px solid var(--hair);border-radius:10px;overflow:hidden;background:var(--inset)}
+.docctl table{width:100%;border-collapse:collapse;font-size:13.5px}
+.docctl th,.docctl td{text-align:left;padding:9px 14px;border-bottom:1px solid var(--hair);vertical-align:top}
+.docctl tr:last-child th,.docctl tr:last-child td{border-bottom:none}
+.docctl th{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);font-weight:600;width:150px;white-space:nowrap}
+.docctl td{color:var(--ink)}
+.classif{display:inline-block;font-family:var(--mono);font-size:10.5px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:4px;
+  background:var(--med-bg);color:var(--med)}
+.pill{display:inline-block;font-family:var(--mono);font-size:10.5px;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:99px}
+.pill.partial{background:var(--high-bg);color:var(--high)}
+
+.summary{background:var(--panel);border:1px solid var(--hair);border-left:3px solid var(--teal);
+  border-radius:0 10px 10px 0;padding:22px 24px;margin-top:26px;box-shadow:var(--shadow)}
+.summary h3{font-size:17px;font-weight:700;margin-bottom:12px}
+.summary p{margin:0 0 12px;font-size:15px;line-height:1.6;max-width:76ch}
+.summary p:last-child{margin-bottom:0}
+.summary b{color:var(--ink)}
+
+.toc{margin-top:26px;border:1px solid var(--hair);border-radius:10px;background:var(--panel);padding:18px 22px;box-shadow:var(--shadow)}
+.toc h3{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:12px}
+.toc ol{margin:0;padding:0;list-style:none;counter-reset:toc;display:flex;flex-direction:column;gap:8px}
+.toc li{counter-increment:toc;font-size:14.5px}
+.toc li a{color:var(--body);text-decoration:none;display:flex;gap:12px;align-items:baseline;
+  border-bottom:1px dotted var(--hair);padding-bottom:6px}
+.toc li a:hover,.toc li a:focus-visible{color:var(--teal)}
+.toc li a::before{content:counter(toc) ".";font-family:var(--mono);font-size:12px;color:var(--teal);font-weight:700;flex:none;min-width:18px}
+.toc li a .tl{flex:1}
+.toc li a .tn{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+
+section{padding:52px 0;border-bottom:1px solid var(--hair)}
+.secnum{font-family:var(--mono);font-size:11.5px;color:var(--teal);font-weight:700;letter-spacing:.08em}
+.sec-title{font-size:clamp(21px,2.9vw,27px);font-weight:700;letter-spacing:-.01em;margin-top:10px}
+.sec-lede{color:var(--body);max-width:74ch;margin:12px 0 0;font-size:15.5px}
+
+/* legend */
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.lv{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;color:var(--muted);
+  border:1px solid var(--hair);border-radius:999px;padding:4px 10px;background:var(--panel)}
+.sw{width:11px;height:11px;border-radius:3px}
+
+/* entity cards */
+.entities{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:24px}
+@media(max-width:820px){.entities{grid-template-columns:1fr}}
+.ent{background:var(--panel);border:1px solid var(--hair);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow)}
+.ent-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ent-name{font-size:15.5px;font-weight:700;color:var(--ink)}
+.ent-key{font-family:var(--mono);font-size:10.5px;padding:3px 8px;border-radius:5px;font-weight:700;white-space:nowrap}
+.ent-key.strong{background:var(--ok-bg);color:var(--ok)}
+.ent-key.weak{background:var(--high-bg);color:var(--high)}
+.ent-key.none{background:var(--crit-bg);color:var(--crit)}
+.ent-desc{font-size:13.5px;color:var(--body);margin-top:8px;line-height:1.5}
+.ent-src{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.src-chip{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:99px;font-weight:600}
+.src-chip.mha{background:var(--mha-bg);color:var(--mha)}
+.src-chip.tri{background:var(--tri-bg);color:var(--tri)}
+.src-chip.missing{background:var(--panel-2);color:var(--muted);border:1px dashed var(--hair)}
+
+/* conformance matrix */
+.matrix-wrap{overflow-x:auto;margin-top:26px;border:1px solid var(--hair);border-radius:12px;box-shadow:var(--shadow)}
+table.matrix{width:100%;border-collapse:collapse;font-size:13px;min-width:920px;background:var(--panel)}
+table.matrix th, table.matrix td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--hair);vertical-align:top}
+table.matrix thead th{background:var(--panel-2);font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--muted);font-weight:700;position:sticky;top:0}
+table.matrix td.ent{font-weight:700;color:var(--ink);white-space:nowrap}
+table.matrix tr:last-child td{border-bottom:none}
+table.matrix code{font-size:11.5px;color:var(--body)}
+.conf-key{font-family:var(--mono);font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap}
+.conf-key.strong{background:var(--ok-bg);color:var(--ok)}
+.conf-key.weak{background:var(--high-bg);color:var(--high)}
+.conf-key.none{background:var(--crit-bg);color:var(--crit)}
+
+/* constraint cards */
+.constraints{display:flex;flex-direction:column;gap:10px;margin-top:26px}
+.cst{background:var(--panel);border:1px solid var(--hair);border-radius:10px;padding:15px 17px;
+  display:grid;grid-template-columns:88px 1fr;gap:16px;align-items:start;box-shadow:var(--shadow)}
+.cst.crit{border-left:3px solid var(--crit)}
+.cst.high{border-left:3px solid var(--high)}
+.sev{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  padding:3px 7px;border-radius:4px;text-align:center;white-space:nowrap;height:fit-content}
+.sev.crit{background:var(--crit-bg);color:var(--crit)}
+.sev.high{background:var(--high-bg);color:var(--high)}
+.cst h4{font-size:15.5px;font-weight:650;margin-bottom:5px}
+.cst p{margin:0;font-size:14.5px;line-height:1.5}
+.cst .why{margin-top:7px;font-size:13.5px;color:var(--muted)}
+.cst .why b{color:var(--body);font-weight:600}
+
+/* figure */
+figure{margin:30px 0 0;background:var(--panel);border:1px solid var(--hair);border-radius:12px;
+  padding:22px 20px 16px;box-shadow:var(--shadow);overflow-x:auto}
+figure svg{display:block;width:100%;min-width:700px;max-width:100%;height:auto;color:var(--body)}
+figcaption{font-size:13.5px;color:var(--muted);margin-top:14px;padding-top:12px;
+  border-top:1px solid var(--hair);line-height:1.5}
+figcaption b{color:var(--ink);font-weight:600}
+.s-mha{stroke:var(--mha)} .t-mha{fill:var(--mha)}
+.s-tri{stroke:var(--tri)} .t-tri{fill:var(--tri)}
+.s-ok{stroke:var(--ok)}   .t-ok{fill:var(--ok)}
+.s-pending{stroke:var(--muted);stroke-dasharray:4 3}
+
+/* question list */
+.qgroup{margin-top:24px}
+.qgroup h4{font-size:15px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:9px}
+.qgroup h4 .n{font-family:var(--mono);font-size:11px;color:var(--muted);font-weight:600}
+.qlist{margin:12px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px}
+.qlist li{background:var(--panel);border:1px solid var(--hair);border-radius:8px;padding:11px 14px;
+  display:flex;gap:11px;align-items:flex-start;font-size:14px;line-height:1.5;box-shadow:var(--shadow)}
+.qlist .qn{font-family:var(--mono);font-size:11.5px;color:var(--blue);font-weight:700;flex:none;padding-top:1px}
+
+.note{background:var(--inset);border:1px solid var(--hair);border-left:3px solid var(--blue);
+  border-radius:0 8px 8px 0;padding:14px 16px;margin-top:22px;font-size:14.5px}
+.note b{color:var(--ink)}
+
+footer{padding:34px 0 46px;color:var(--muted);font-size:13.5px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between}
+</style>
+
+<div class="rulebar"></div>
+<header class="masthead">
+  <div class="wrap">
+    <p class="eyebrow">Corewell Health · Snowflake DD&amp;A · Strategy &amp; Market Intelligence</p>
+    <h1>Enterprise Data Model — Conceptual Draft</h1>
+    <p class="sub">A first conceptual model and source-conformance matrix built from the MHA
+      and Trilliant Health data dictionaries, with the specific inputs needed to complete it.</p>
+    <div class="byline"><span class="role">Prepared by</span><span class="org">TEKsystems Team</span></div>
+
+    <div class="docctl">
+      <table>
+        <tbody>
+          <tr><th scope="row">Client</th><td>Corewell Health</td></tr>
+          <tr><th scope="row">Engagement</th><td>Snowflake Data Due-Diligence &amp; Assessment (DD&amp;A)</td></tr>
+          <tr><th scope="row">Document</th><td>Conceptual Data Model &amp; Source Conformance Matrix</td></tr>
+          <tr><th scope="row">Prepared by</th><td>TEKsystems Team</td></tr>
+          <tr><th scope="row">Version</th><td>v0.1 — <span class="pill partial">Partial draft</span></td></tr>
+          <tr><th scope="row">Inputs used</th><td>MHA Data Dictionary (Inpatient, Outpatient) Jan–Mar 2026 · Trilliant Health Data Dictionary (Visits, Organization Directory)</td></tr>
+          <tr><th scope="row">Inputs pending</th><td>Epic (Clarity/Caboodle) and Strata Cost Accounting dictionaries — see §5</td></tr>
+          <tr><th scope="row">Classification</th><td><span class="classif">Confidential</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="summary">
+      <h3>Executive summary</h3>
+      <p>This draft conforms two of the three data sources named in discovery — MHA hospital
+        discharge data and Trilliant Health's market intelligence feed. <b>Epic and Strata are
+        not yet represented</b> and their absence is significant: both external sources are
+        de-identified or tokenized, so neither can anchor an enterprise model on its own.</p>
+      <p>Eleven canonical entities are identified. Provider (via NPI) and Diagnosis (via
+        ICD-10-CM) conform cleanly across both sources today. <b>Person, Visit, and Service Line
+        do not</b> — no shared person key exists between the sources, visit grain differs, and
+        service line is defined in Trilliant but must be derived for MHA.</p>
+      <p>Section 5 lists the specific inputs — data, decisions, and confirmations — required
+        from Corewell to move this from a two-source sketch to an enterprise model.</p>
+    </div>
+
+    <nav class="toc" aria-label="Contents">
+      <h3>Contents</h3>
+      <ol>
+        <li><a href="#s1"><span class="tl">Canonical entities</span><span class="tn">11 entities</span></a></li>
+        <li><a href="#s2"><span class="tl">Source conformance matrix</span><span class="tn">MHA · Trilliant</span></a></li>
+        <li><a href="#s3"><span class="tl">Grain reconciliation</span><span class="tn">4 grains → 1</span></a></li>
+        <li><a href="#s4"><span class="tl">Structural constraints</span><span class="tn">4 findings</span></a></li>
+        <li><a href="#s5"><span class="tl">What's needed to complete this</span><span class="tn">12 items</span></a></li>
+      </ol>
+    </nav>
+  </div>
+</header>
+
+<section id="s1">
+  <div class="wrap">
+    <p class="eyebrow"><span class="secnum">Section 1</span> · Canonical Entities</p>
+    <h2 class="sec-title">Eleven entities, three conformance grades</h2>
+    <p class="sec-lede">Each entity below is graded by how well MHA and Trilliant can be joined
+      on it today. A <b>strong</b> key is a shared, unambiguous code (NPI, ICD-10). A
+      <b>weak</b> key needs a crosswalk to be built. <b>None</b> means the entity cannot be
+      conformed between these two sources at all.</p>
+
+    <div class="legend" aria-hidden="true">
+      <span class="lv"><span class="sw" style="background:var(--ok)"></span>Strong key — conforms directly</span>
+      <span class="lv"><span class="sw" style="background:var(--high)"></span>Weak key — needs a crosswalk</span>
+      <span class="lv"><span class="sw" style="background:var(--crit)"></span>No key — cannot conform</span>
+    </div>
+
+    <div class="entities" id="entities"></div>
+  </div>
+</section>
+
+<section id="s2">
+  <div class="wrap">
+    <p class="eyebrow"><span class="secnum">Section 2</span> · Conformance Matrix</p>
+    <h2 class="sec-title">What each source contributes, at what grain</h2>
+    <p class="sec-lede">Field names as they appear in each dictionary. Grain is the finest level
+      of detail available for that entity in that source.</p>
+    <div class="matrix-wrap">
+      <table class="matrix" id="matrixTable">
+        <thead>
+          <tr><th>Entity</th><th>MHA (IP/OP)</th><th>Trilliant (Visits)</th><th>Grain</th><th>Conforms via</th></tr>
+        </thead>
+        <tbody id="matrixBody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="s3">
+  <div class="wrap">
+    <p class="eyebrow"><span class="secnum">Section 3</span> · Grain Reconciliation</p>
+    <h2 class="sec-title">Four sources, four grains, one proposed target</h2>
+    <p class="sec-lede">Trilliant reports at procedure line, MHA at discharge, and Epic/Strata —
+      not yet reviewed — are expected at encounter and cost-case grain respectively. The
+      recommended target is <b>visit/encounter</b>, with procedure-line detail kept as a
+      separate linked fact rather than forced up to the coarser grain.</p>
+
+    <figure>
+      <svg viewBox="0 0 1000 340" role="img"
+           aria-label="Four source grains funnel toward a proposed conformed visit or encounter grain: Trilliant at procedure line rolls up, MHA at discharge maps directly, and Epic and Strata, not yet reviewed, are shown as pending inputs at encounter and cost case grain respectively.">
+        <defs>
+          <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" fill="currentColor"/>
+          </marker>
+          <marker id="arok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" class="t-ok"/>
+          </marker>
+        </defs>
+
+        <!-- source grain boxes -->
+        <rect x="20" y="30" width="210" height="64" rx="8" class="s-tri" stroke-width="1.8" fill="none"/>
+        <text x="125" y="55" text-anchor="middle" font-size="13" class="t-tri" font-weight="700">Trilliant — Procedure Line</text>
+        <text x="125" y="74" text-anchor="middle" font-size="11" fill="currentColor" opacity=".75">procedure_code · procedure_date</text>
+        <text x="125" y="88" text-anchor="middle" font-size="10" fill="currentColor" opacity=".6">finest grain of the four</text>
+
+        <rect x="20" y="130" width="210" height="64" rx="8" class="s-mha" stroke-width="1.8" fill="none"/>
+        <text x="125" y="155" text-anchor="middle" font-size="13" class="t-mha" font-weight="700">MHA — Discharge</text>
+        <text x="125" y="174" text-anchor="middle" font-size="11" fill="currentColor" opacity=".75">one row = one IP/OP discharge</text>
+        <text x="125" y="188" text-anchor="middle" font-size="10" fill="currentColor" opacity=".6">no visit ID; row itself is the key</text>
+
+        <rect x="20" y="230" width="210" height="56" rx="8" fill="none" class="s-pending" stroke-width="1.6"/>
+        <text x="125" y="254" text-anchor="middle" font-size="13" fill="currentColor" opacity=".65" font-weight="700">Epic — Encounter?</text>
+        <text x="125" y="272" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".55">pending — dictionary not yet reviewed</text>
+
+        <rect x="20" y="292" width="210" height="40" rx="8" fill="none" class="s-pending" stroke-width="1.6"/>
+        <text x="125" y="317" text-anchor="middle" font-size="12" fill="currentColor" opacity=".6" font-weight="700">Strata — Cost case?  (pending)</text>
+
+        <!-- funnel arrows -->
+        <g stroke="currentColor" fill="none" opacity=".55" marker-end="url(#ar3)">
+          <path d="M230 62  C 340 62,  340 150, 430 150"/>
+          <path d="M230 162 C 320 162, 320 150, 430 150"/>
+          <path d="M230 258 C 320 258, 320 165, 428 158" class="s-pending"/>
+          <path d="M230 312 C 320 312, 320 172, 428 165" class="s-pending"/>
+        </g>
+
+        <!-- target grain -->
+        <rect x="440" y="108" width="230" height="84" rx="10" class="s-ok" stroke-width="2.2" fill="none"/>
+        <text x="555" y="98" text-anchor="middle" font-size="10.5" class="t-ok" font-weight="700">PROPOSED TARGET</text>
+        <text x="555" y="140" text-anchor="middle" font-size="14" class="t-ok" font-weight="700">Conformed Visit /</text>
+        <text x="555" y="158" text-anchor="middle" font-size="14" class="t-ok" font-weight="700">Encounter Grain</text>
+        <text x="555" y="178" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".7">Procedure detail kept as linked fact, not rolled up</text>
+
+        <!-- output -->
+        <g stroke="currentColor" fill="none" opacity=".65" marker-end="url(#ar3)">
+          <line x1="670" y1="150" x2="760" y2="150"/>
+        </g>
+        <rect x="770" y="108" width="210" height="84" rx="10" fill="none" stroke="currentColor" opacity=".8"/>
+        <text x="875" y="132" text-anchor="middle" font-size="12.5" fill="currentColor" font-weight="700">Two conformed facts</text>
+        <text x="875" y="154" text-anchor="middle" font-size="11" fill="currentColor" opacity=".8">fact_visit</text>
+        <text x="875" y="172" text-anchor="middle" font-size="11" fill="currentColor" opacity=".8">fact_procedure (→ visit)</text>
+      </svg>
+      <figcaption><b>Recommendation.</b> Reconciling at visit/encounter grain avoids destroying
+        Trilliant's procedure-level detail while giving MHA — which has no finer grain to offer —
+        a clean home. Epic and Strata are drawn pending because their actual grain is unconfirmed;
+        this diagram should be revised once those dictionaries are reviewed.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="s4">
+  <div class="wrap">
+    <p class="eyebrow"><span class="secnum">Section 4</span> · Structural Constraints</p>
+    <h2 class="sec-title">Four findings that shape every downstream decision</h2>
+    <p class="sec-lede">These aren't modeling preferences — they're hard limits in the source
+      data itself, found while building the matrix above.</p>
+
+    <div class="constraints">
+      <div class="cst crit">
+        <span class="sev crit">Hard limit</span>
+        <div>
+          <h4>Person-level joins between MHA and Trilliant are not possible</h4>
+          <p>MHA carries no patient identifier of any kind — not even a token. Trilliant's
+            <code>person_id</code> is Trilliant's own token, unrelated to any Corewell or MHA
+            identifier. There is no key, direct or indirect, linking the same human across sources.</p>
+          <p class="why"><b>Consequence —</b> patient-level analysis must stay within a single
+            source. Cross-source work is limited to NPI, geography, date, code sets, and payer.</p>
+        </div>
+      </div>
+
+      <div class="cst crit">
+        <span class="sev crit">Hard limit</span>
+        <div>
+          <h4>Geography granularity conflicts — ZIP5 vs. ZIP3</h4>
+          <p>MHA reports patient <code>ZIPCODE</code> at 5 digits. Trilliant's person geography
+            (<code>visit_person_zip3</code>, <code>person_service_area_zip_code</code>) is 3-digit.</p>
+          <p class="why"><b>Consequence —</b> a conformed geography dimension must degrade MHA to
+            ZIP3, or the two sources maintain separate geography dimensions. This is a business
+            call — see Q8 in Section 5 — not something to decide unilaterally.</p>
+        </div>
+      </div>
+
+      <div class="cst high">
+        <span class="sev high">Needs decision</span>
+        <div>
+          <h4>Service line is defined in one source and must be derived in the other</h4>
+          <p>Trilliant provides <code>service_line</code> directly, alongside explicit
+            <code>visit_has_surgical</code> / <code>_oncology</code> / <code>_behavioral</code> flags.
+            MHA has no such field — it would be derived from <code>MSDRG</code>/<code>MSMDC</code>
+            (inpatient) or procedure code categories (outpatient).</p>
+          <p class="why"><b>Consequence —</b> since this is a Strategy &amp; Market Intelligence
+            engagement, service line is arguably the single most important conformed dimension —
+            and the two derivations will disagree unless one canonical taxonomy is built and
+            both sources are mapped into it.</p>
+        </div>
+      </div>
+
+      <div class="cst high">
+        <span class="sev high">Needs decision</span>
+        <div>
+          <h4>MHA and Trilliant substantially overlap — this is a conflict, not redundancy</h4>
+          <p>Both sources carry visits, diagnoses, procedures, providers and payers. MHA is
+            Michigan hospital discharge data; Trilliant is broader (national, ambulatory/professional,
+            person-longitudinal, with charges).</p>
+          <p class="why"><b>Consequence —</b> when the two disagree on the same metric for the
+            same period, one must be ruled authoritative. That is a business decision — see Q5.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="s5">
+  <div class="wrap">
+    <p class="eyebrow"><span class="secnum">Section 5</span> · Completing the Model</p>
+    <h2 class="sec-title">What's needed from Corewell</h2>
+    <p class="sec-lede">Grouped by type. Sourcing items unblock the technical model; business
+      and governance items determine what "correct" even means for it.</p>
+
+    <div class="qgroup">
+      <h4>Sourcing <span class="n">— unblocks the technical model</span></h4>
+      <ul class="qlist">
+        <li><span class="qn">Q1</span>Can we get the <b>Epic</b> (Clarity or Caboodle) and <b>Strata</b> data dictionaries — the two sources named in discovery that we still don't have?</li>
+        <li><span class="qn">Q2</span>Which <b>HOSPITALID(s)</b> in the MHA file are Corewell's facilities? Without this, market-share analysis has no "us vs. market" split.</li>
+        <li><span class="qn">Q3</span>Which <b>Trilliant datasets</b> are actually licensed beyond Visits and Organization Directory — Provider Directory, Demand Forecast, Price Transparency, Site Selection?</li>
+      </ul>
+    </div>
+
+    <div class="qgroup">
+      <h4>Business direction <span class="n">— determines correct scope</span></h4>
+      <ul class="qlist">
+        <li><span class="qn">Q4</span>What are the <b>top 5–10 reports or questions</b> the Strategy &amp; Market Intelligence team needs answered first?</li>
+        <li><span class="qn">Q5</span>When MHA and Trilliant disagree on the same metric, <b>which source is authoritative</b>?</li>
+        <li><span class="qn">Q6</span>Is a <b>service line taxonomy</b> already defined anywhere internally, or does it need to be built from scratch?</li>
+      </ul>
+    </div>
+
+    <div class="qgroup">
+      <h4>Governance <span class="n">— constrains how the model can be built</span></h4>
+      <ul class="qlist">
+        <li><span class="qn">Q7</span>What are the <b>MHA data-use-agreement</b> restrictions on redistribution and access within Snowflake?</li>
+        <li><span class="qn">Q8</span>Is <b>ZIP3</b> an acceptable geography grain for market analysis, or does the business require ZIP5 — meaning MHA cannot be safely conformed down?</li>
+      </ul>
+    </div>
+
+    <div class="note"><b>How this feeds the DD&amp;A workbook.</b> Sections 1–4 are direct
+      inputs to the <span class="mono">8_Modeling</span> tab's Unified Data Model questions.
+      Section 5's answers should be logged against the corresponding domain — sourcing under
+      Data Ingestion, governance under Compliance — as they're confirmed.</div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div><b style="color:var(--ink)">Prepared by TEKsystems Team</b> · Corewell Health Snowflake DD&amp;A ·
+      Conceptual Data Model &amp; Source Conformance Matrix, v0.1 (partial)</div>
+    <div class="mono">Confidential · 11 entities · 2 of 3+ sources reviewed</div>
+  </div>
+</footer>
+
+<script>
+const ENTITIES = [
+ ["Person / Patient","none","MHA: fully de-identified — AGE, SEX, RACE, ETHNICITY, ZIPCODE, COUNTYPATIENT_FIPS, no ID of any kind. Trilliant: tokenized person_id, person_gender, person_age, visit_person_zip3.",["mha","tri"]],
+ ["Visit / Encounter","weak","MHA: one row = one discharge, no visit ID (grain IS the row). Trilliant: visit_id, visit_date_start/end, visit_is_inpatient, visit_has_* flags. No shared key — grains differ.",["mha","tri"]],
+ ["Diagnosis","strong","Shared vocabulary: ICD-10-CM. MHA: PRINCIPALDIAGNOSIS + 29 SECONDARYDIAGNOSIS fields. Trilliant: diagnosis_code, visit_primary_diagnosis_code, diagnosis_code_chapter/section/condition.",["mha","tri"]],
+ ["Procedure","weak","MHA IP: ICD-10-PCS (PRINCIPALICDPROCEDURE + 29 more). MHA OP: 5-char outpatient procedure codes (CPT/HCPCS, unconfirmed). Trilliant: procedure_code + category/sub_category, revenue_code. Code systems differ by context — needs crosswalk.",["mha","tri"]],
+ ["DRG / MDC Grouping","strong","MHA IP only: MSDRG, MSMDC (CMS grouper). Trilliant: drg_code, drg_description, drg_severity, mdc_code/description. Conforms directly if grouper version matches — confirm.",["mha","tri"]],
+ ["Provider (Individual)","strong","Shared vocabulary: NPI. MHA: Referring/PCP/Attending/Surgeon NPI. Trilliant: rendering/referring/pcp provider NPI, name, specialty, estimated age.",["mha","tri"]],
+ ["Organization / Facility","weak","MHA: HOSPITALID — MHA's own 4-char code, NOT an NPI. Trilliant: site_of_service_npi, rendering_organization_npi, Organization Directory with organization_npi + in_system_organization flag. Needs a HOSPITALID→NPI crosswalk.",["mha","tri"]],
+ ["Payer","weak","MHA: PRIMARYPAYER — MHA's own coded list (Medicare FFS/Managed, Medicaid, BCBS, Commercial, Self-Pay...). Trilliant: payer_name, payer_type (free-text-like categories). Needs a categorical crosswalk.",["mha","tri"]],
+ ["Geography / Market","weak","MHA: ZIPCODE (5-digit), COUNTYPATIENT_FIPS. Trilliant: person_service_area_state/cbsa/market/zip(3)/county/city; separate site_of_service geography. ZIP5 vs ZIP3 conflict — see Constraint 2.",["mha","tri"]],
+ ["Service Line","weak","Trilliant: explicit service_line field + visit_has_surgical/oncology/behavioral/etc flags. MHA: no field — must derive from MSDRG/MSMDC (IP) or procedure category (OP). Central modeling task — see Constraint 3.",["mha","tri"]],
+ ["Cancer / Oncology","none","Trilliant only: cancer_site, cancer_sub_site, cancer_condition_code/description, cancer_diagnosis_date, cancer_malignancy, diagnosing provider. No MHA equivalent field — would need derivation from oncology DRG/diagnosis codes.",["tri"]],
+];
+
+const MATRIX = [
+ ["Person","AGE, SEX, RACE, ETHNICITY, ZIPCODE","person_id, person_gender, person_age, visit_person_zip3","Row (MHA) / Person (Tri)","none"],
+ ["Visit","1 row = 1 discharge (no ID)","visit_id, visit_date_start/end","Discharge (MHA) / Visit (Tri)","weak"],
+ ["Diagnosis","PRINCIPALDIAGNOSIS + 29× SECONDARYDIAGNOSIS","diagnosis_code, visit_primary_diagnosis_code","Diagnosis line","strong — ICD-10-CM"],
+ ["Procedure","ICD-10-PCS (IP) / 5-char code (OP)","procedure_code, revenue_code","Procedure line","weak — code system differs"],
+ ["DRG / MDC","MSDRG, MSMDC (IP only)","drg_code, drg_severity, mdc_code","Discharge / Visit","strong — CMS grouper (confirm version)"],
+ ["Provider","Referring/PCP/Attending/Surgeon NPI","rendering/referring/pcp_provider_npi","Provider","strong — NPI"],
+ ["Facility","HOSPITALID (MHA code)","site_of_service_npi, organization_npi","Facility","weak — needs crosswalk"],
+ ["Payer","PRIMARYPAYER (coded list)","payer_name, payer_type","Visit","weak — categorical crosswalk"],
+ ["Geography","ZIPCODE (5-digit), COUNTYPATIENT_FIPS","person_service_area_zip_code (3-digit)","Visit","weak — ZIP5 vs ZIP3"],
+ ["Service Line","derived from MSDRG/MSMDC or procedure","service_line (explicit)","Visit","weak — needs taxonomy"],
+];
+
+const KEYCLASS = {strong:"strong", weak:"weak", none:"none"};
+const KEYLABEL = {strong:"Strong key", weak:"Weak key", none:"No key"};
+
+document.getElementById('entities').innerHTML = ENTITIES.map(([name,key,desc,srcs])=>`
+  <div class="ent">
+    <div class="ent-head">
+      <div class="ent-name">${name}</div>
+      <div class="ent-key ${KEYCLASS[key]}">${KEYLABEL[key]}</div>
+    </div>
+    <div class="ent-desc">${desc}</div>
+    <div class="ent-src">
+      ${srcs.includes('mha') ? '<span class="src-chip mha">MHA</span>' : '<span class="src-chip missing">MHA — absent</span>'}
+      ${srcs.includes('tri') ? '<span class="src-chip tri">Trilliant</span>' : '<span class="src-chip missing">Trilliant — absent</span>'}
+    </div>
+  </div>`).join('');
+
+document.getElementById('matrixBody').innerHTML = MATRIX.map(([ent,mha,tri,grain,conf])=>{
+  const cls = conf.startsWith('strong') ? 'strong' : conf.startsWith('weak') ? 'weak' : 'none';
+  return `<tr>
+    <td class="ent">${ent}</td>
+    <td><code>${mha}</code></td>
+    <td><code>${tri}</code></td>
+    <td>${grain}</td>
+    <td><span class="conf-key ${cls}">${conf}</span></td>
+  </tr>`;
+}).join('');
+</script>
