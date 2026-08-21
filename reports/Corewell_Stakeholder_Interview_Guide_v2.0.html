@@ -1,0 +1,501 @@
+<title>Corewell Stakeholder Interview Guide</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{
+  --ground:#F4F7F8; --panel:#FFFFFF; --panel-2:#E9F0F1; --inset:#F0F5F6;
+  --ink:#0C2A2E; --body:#2C4A4D; --muted:#5F7C7E; --hair:#CFDFE0;
+  --teal:#0F766E; --blue:#0369A1; --accent-soft:#D6ECEA;
+  --gold:#B08A17;
+  --crit:#C0342B; --crit-bg:#FBE9E7;
+  --high:#C25A18; --high-bg:#FCEEE3;
+  --med:#8A6D0F;  --med-bg:#FAF3DE;
+  --ok:#0F766E;   --ok-bg:#DDF0EE;
+  --shadow:0 1px 2px rgba(12,42,46,.05),0 6px 18px rgba(12,42,46,.06);
+  --mono:ui-monospace,"SF Mono","Cascadia Code","JetBrains Mono",Menlo,Consolas,monospace;
+  --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0A171A; --panel:#102327; --panel-2:#162E32; --inset:#14292D;
+    --ink:#E8F3F2; --body:#B8D0D0; --muted:#7C9B9B; --hair:#22423F;
+    --teal:#41BFB0; --blue:#5CB8E6; --accent-soft:#183B39;
+    --gold:#D6AC33;
+    --crit:#F08C82; --crit-bg:#3A1D1A;
+    --high:#F0A167; --high-bg:#3A2617;
+    --med:#DCC062;  --med-bg:#332C13;
+    --ok:#41BFB0;   --ok-bg:#14332F;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0A171A; --panel:#102327; --panel-2:#162E32; --inset:#14292D;
+  --ink:#E8F3F2; --body:#B8D0D0; --muted:#7C9B9B; --hair:#22423F;
+  --teal:#41BFB0; --blue:#5CB8E6; --accent-soft:#183B39;
+  --gold:#D6AC33;
+  --crit:#F08C82; --crit-bg:#3A1D1A;
+  --high:#F0A167; --high-bg:#3A2617;
+  --med:#DCC062;  --med-bg:#332C13;
+  --ok:#41BFB0;   --ok-bg:#14332F;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+}
+:root[data-theme="light"]{
+  --ground:#F4F7F8; --panel:#FFFFFF; --panel-2:#E9F0F1; --inset:#F0F5F6;
+  --ink:#0C2A2E; --body:#2C4A4D; --muted:#5F7C7E; --hair:#CFDFE0;
+  --teal:#0F766E; --blue:#0369A1; --accent-soft:#D6ECEA;
+  --gold:#B08A17;
+  --crit:#C0342B; --crit-bg:#FBE9E7;
+  --high:#C25A18; --high-bg:#FCEEE3;
+  --med:#8A6D0F;  --med-bg:#FAF3DE;
+  --ok:#0F766E;   --ok-bg:#DDF0EE;
+  --shadow:0 1px 2px rgba(12,42,46,.05),0 6px 18px rgba(12,42,46,.06);
+}
+*{box-sizing:border-box}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+body{margin:0;background:var(--ground);color:var(--body);font-family:var(--sans);
+  font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:0 28px}
+h1,h2,h3,h4{color:var(--ink);text-wrap:balance;margin:0;line-height:1.2}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--teal);font-weight:600;margin:0}
+code,.mono{font-family:var(--mono)}
+a{color:var(--blue)}
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:3px}
+
+.rulebar{height:4px;background:linear-gradient(90deg,var(--teal),var(--blue) 55%,var(--gold))}
+header.masthead{border-bottom:1px solid var(--hair);background:var(--panel)}
+header.masthead .wrap{padding-top:34px;padding-bottom:30px}
+header.masthead h1{font-size:clamp(26px,4vw,40px);letter-spacing:-.018em;font-weight:700;margin:12px 0 0}
+.sub{font-size:clamp(15px,2vw,18px);color:var(--body);max-width:72ch;margin:14px 0 0}
+.byline{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-top:8px}
+.byline .org{font-weight:700;color:var(--ink);font-size:15px}
+.byline .role{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+
+.docctl{margin-top:26px;border:1px solid var(--hair);border-radius:10px;overflow:hidden;background:var(--inset)}
+.docctl table{width:100%;border-collapse:collapse;font-size:13.5px}
+.docctl th,.docctl td{text-align:left;padding:9px 14px;border-bottom:1px solid var(--hair);vertical-align:top}
+.docctl tr:last-child th,.docctl tr:last-child td{border-bottom:none}
+.docctl th{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);font-weight:600;width:170px;white-space:nowrap}
+.docctl td{color:var(--ink)}
+.classif{display:inline-block;font-family:var(--mono);font-size:10.5px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:4px;
+  background:var(--med-bg);color:var(--med)}
+
+.summary{background:var(--panel);border:1px solid var(--hair);border-left:3px solid var(--teal);
+  border-radius:0 10px 10px 0;padding:22px 24px;margin-top:26px;box-shadow:var(--shadow)}
+.summary h3{font-size:17px;font-weight:700;margin-bottom:12px}
+.summary p{margin:0 0 12px;font-size:15px;line-height:1.6;max-width:76ch}
+.summary p:last-child{margin-bottom:0}
+.summary b{color:var(--ink)}
+
+/* what changed */
+.delta{margin-top:20px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media(max-width:760px){.delta{grid-template-columns:1fr}}
+.dcard{border-radius:10px;padding:14px 16px;font-size:13.5px;border:1px solid var(--hair)}
+.dcard.resolved{background:var(--ok-bg);border-color:var(--ok)}
+.dcard.named{background:var(--ok-bg);border-color:var(--ok)}
+.dcard.open{background:var(--med-bg);border-color:var(--med)}
+.dcard .dlabel{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;margin-bottom:5px}
+.dcard.resolved .dlabel,.dcard.named .dlabel{color:var(--ok)}
+.dcard.open .dlabel{color:var(--med)}
+.dcard b{color:var(--ink)}
+
+.toc{margin-top:26px;border:1px solid var(--hair);border-radius:10px;background:var(--panel);padding:18px 22px;box-shadow:var(--shadow)}
+.toc h3{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:12px}
+.toc ol{margin:0;padding:0;list-style:none;counter-reset:toc;display:flex;flex-direction:column;gap:8px}
+.toc li{counter-increment:toc;font-size:14.5px}
+.toc li a{color:var(--body);text-decoration:none;display:flex;gap:12px;align-items:baseline;
+  border-bottom:1px dotted var(--hair);padding-bottom:6px}
+.toc li a:hover,.toc li a:focus-visible{color:var(--teal)}
+.toc li a::before{content:counter(toc) ".";font-family:var(--mono);font-size:12px;color:var(--teal);font-weight:700;flex:none;min-width:18px}
+.toc li a .tl{flex:1}
+.toc li a .tn{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+
+section{padding:52px 0;border-bottom:1px solid var(--hair)}
+.secnum{font-family:var(--mono);font-size:11.5px;color:var(--teal);font-weight:700;letter-spacing:.08em}
+.sec-title{font-size:clamp(21px,2.9vw,27px);font-weight:700;letter-spacing:-.01em;margin-top:10px}
+.sec-lede{color:var(--body);max-width:74ch;margin:12px 0 0;font-size:15.5px}
+
+/* schedule table */
+.matrix-wrap{overflow-x:auto;margin-top:24px;border:1px solid var(--hair);border-radius:12px;box-shadow:var(--shadow)}
+table.sched{width:100%;border-collapse:collapse;font-size:13.5px;min-width:820px;background:var(--panel)}
+table.sched th, table.sched td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--hair);vertical-align:top}
+table.sched thead th{background:var(--panel-2);font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--muted);font-weight:700}
+table.sched td.grp{font-weight:700;color:var(--ink);white-space:nowrap}
+table.sched tr:last-child td{border-bottom:none}
+.tag{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;
+  background:var(--accent-soft);color:var(--teal);white-space:nowrap}
+
+/* note */
+.note{background:var(--inset);border:1px solid var(--hair);border-left:3px solid var(--blue);
+  border-radius:0 8px 8px 0;padding:14px 16px;margin-top:22px;font-size:14.5px}
+.note b{color:var(--ink)}
+.note.warn{border-left-color:var(--high)}
+
+/* focus session block */
+.session{background:var(--panel);border:1px solid var(--hair);border-radius:14px;padding:26px 26px 24px;
+  margin-top:26px;box-shadow:var(--shadow);border-top:3px solid var(--teal)}
+.session .shead{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:12px;
+  margin-bottom:6px}
+.session h3{font-size:19px;font-weight:700}
+.session .groups{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.session .focus-desc{font-size:14.5px;color:var(--body);margin-top:8px;max-width:76ch}
+.participants{display:flex;flex-wrap:wrap;gap:14px;margin-top:16px}
+.pgroup{background:var(--inset);border:1px solid var(--hair);border-radius:8px;padding:10px 14px;flex:1;min-width:200px}
+.pgroup .pg-name{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);font-weight:700}
+.pgroup ul{margin:6px 0 0;padding:0 0 0 16px;font-size:13px;color:var(--body)}
+.pgroup li{margin-bottom:2px}
+
+.qlist{margin:18px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+.qlist li{background:var(--inset);border:1px solid var(--hair);border-radius:8px;padding:12px 15px;
+  display:flex;gap:12px;align-items:flex-start;font-size:14.5px;line-height:1.5}
+.qlist .qn{font-family:var(--mono);font-size:11.5px;color:var(--blue);font-weight:700;flex:none;padding-top:1px;min-width:20px}
+.qlist .qtopic{display:block;font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px;letter-spacing:.03em}
+.qlist .req{display:inline-block;font-family:var(--mono);font-size:9.5px;font-weight:700;color:var(--gold);
+  background:var(--med-bg);border-radius:99px;padding:1px 7px;margin-right:6px}
+
+.subhead{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+  font-weight:700;margin-top:22px}
+.subhead:first-of-type{margin-top:18px}
+
+/* baseline questions */
+.baseline{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:20px}
+@media(max-width:760px){.baseline{grid-template-columns:1fr}}
+.bq{background:var(--panel);border:1px solid var(--hair);border-radius:8px;padding:12px 14px;
+  display:flex;gap:10px;align-items:flex-start;font-size:14px;box-shadow:var(--shadow)}
+.bq .qn{font-family:var(--mono);font-size:11px;color:var(--gold);font-weight:700;flex:none}
+.bq .req{display:block;font-family:var(--mono);font-size:9.5px;color:var(--muted);margin-top:3px}
+
+/* req traceability table */
+table.reqmap{width:100%;border-collapse:collapse;font-size:12.5px;min-width:900px;background:var(--panel)}
+table.reqmap th,table.reqmap td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--hair);vertical-align:top}
+table.reqmap thead th{background:var(--panel-2);font-family:var(--mono);font-size:10px;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--muted);font-weight:700}
+table.reqmap td.rid{font-family:var(--mono);font-weight:700;color:var(--gold);white-space:nowrap}
+table.reqmap tr:last-child td{border-bottom:none}
+
+footer{padding:34px 0 46px;color:var(--muted);font-size:13.5px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between}
+</style>
+
+<div class="rulebar"></div>
+<header class="masthead">
+  <div class="wrap">
+    <p class="eyebrow">Corewell Health · Snowflake DD&amp;A · Sprint 1 Discovery</p>
+    <h1>Stakeholder Interview Question Guide</h1>
+    <p class="sub">Prepared ahead of the six SBD stakeholder sessions, now grounded in the 19
+      requirements confirmed in the Priority 1 Requirements Tracker and the SBD Conceptual
+      Fact &amp; Dimension Model — supersedes v1.0.</p>
+    <div class="byline"><span class="role">Prepared by</span><span class="org">TEKsystems Team</span></div>
+
+    <div class="docctl">
+      <table>
+        <tbody>
+          <tr><th scope="row">Client</th><td>Corewell Health — Strategic Business Development (SBD)</td></tr>
+          <tr><th scope="row">Engagement</th><td>Snowflake Data Due-Diligence &amp; Assessment / Enterprise Data Model</td></tr>
+          <tr><th scope="row">Document</th><td>Stakeholder Interview Question Guide — v2.0 (supersedes v1.0)</td></tr>
+          <tr><th scope="row">Basis</th><td>Corewell DDNA Priority 1 Requirements Tracker (19 requirements, REQ-001–019) ·
+            SBD Conceptual Fact &amp; Dimension Model (Jay Lindeman / Amy Pinder) · TEKsystems SOW Project Requirements ·
+            Jay Lindeman's group email</td></tr>
+          <tr><th scope="row">Sessions</th><td>6 groups (A–F), 1 hour each; Jay Lindeman, Sunaina Kasula, Hwasoo Shin attend all;
+            scheduling — Amanda Marfia</td></tr>
+          <tr><th scope="row">Status</th><td>Draft — questions traced to REQ IDs for follow-up capture, confirm with Jay before sending</td></tr>
+          <tr><th scope="row">Classification</th><td><span class="classif">Confidential</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="summary">
+      <h3>How this guide is organized</h3>
+      <p>Every session opens with a <b>baseline block</b> (Section 2) built from the 12 requirements
+        the tracker scopes to <b>all groups</b> — volume, revenue/denials, workforce, access/capacity,
+        quality-financial linkage, drill-path ownership, demographic governance, and the executive
+        scorecard. Asking it identically in all six sessions keeps answers comparable and surfaces
+        who actually owns each definition today.</p>
+      <p>Each group then gets a <b>focus-specific block</b> built only from the requirements the tracker
+        scopes to that group: <b>Market Insights &amp; Corporate Metrics</b> (Groups A, B — market/volume/growth),
+        <b>Business Development</b> (Group C — cost, margin, opportunity evaluation), and <b>Strategy</b>
+        (Groups D, E, F — the full requirement set, since Strategy is scoped to every topic area). Every
+        question below is tagged with the REQ ID it validates, so answers can be logged straight into the
+        tracker's Interview_Capture sheet.</p>
+    </div>
+
+    <div class="subhead" style="margin-top:26px">What changed since v1.0</div>
+    <div class="delta">
+      <div class="dcard resolved"><div class="dlabel">Resolved</div>
+        Epic lands via <b>Caboodle</b>, not Clarity — the tracker's working principles are explicit:
+        "select Caboodle domains from approved requirements." Closes the open question from the
+        architecture review.</div>
+      <div class="dcard named"><div class="dlabel">Source named</div>
+        Workforce source is now named: <b>Workday / HR / Finance</b>. Closes the "workforce source
+        unnamed" gap flagged in the Fact &amp; Dimension Model v0.2 gap register.</div>
+      <div class="dcard resolved"><div class="dlabel">Constraint confirmed</div>
+        "Do not create patient-level joins between Epic and MHA/Trilliant" is now a stated working
+        principle, not just a flagged risk — the payer/provider and MHA/Epic identity-linkage gaps
+        are design rules, not open questions.</div>
+      <div class="dcard open"><div class="dlabel">Still open</div>
+        Revenue-cycle/claims source remains <b>TBD</b> (REQ-002/003 note "payer/claims source TBD").
+        Patient experience, quality, capacity and equipment sources remain grouped under
+        "Additional Sources" — still unnamed.</div>
+    </div>
+
+    <nav class="toc" aria-label="Contents">
+      <h3>Contents</h3>
+      <ol>
+        <li><a href="#s1"><span class="tl">Session schedule &amp; groups</span><span class="tn">6 sessions</span></a></li>
+        <li><a href="#s2"><span class="tl">Baseline questions — every session</span><span class="tn">8 questions · REQ-001–018</span></a></li>
+        <li><a href="#s3"><span class="tl">Market Insights &amp; Corporate Metrics — Groups A, B</span><span class="tn">5 questions</span></a></li>
+        <li><a href="#s4"><span class="tl">Business Development — Group C</span><span class="tn">5 questions</span></a></li>
+        <li><a href="#s5"><span class="tl">Strategy — Groups D, E, F</span><span class="tn">7 + 1 questions</span></a></li>
+        <li><a href="#s6"><span class="tl">Requirement traceability</span><span class="tn">19 REQs</span></a></li>
+      </ol>
+    </nav>
+  </div>
+</header>
+
+<section id="s1">
+  <div class="wrap">
+    <p class="eyebrow"><span class="secnum">Section 1</span> · Schedule</p>
+    <h2 class="sec-title">Six sessions, three focus areas</h2>
+    <p class="sec-lede">Group membership and focus per the tracker's Stakeholder_Groups sheet.
+      Required attendees (Jay Lindeman, Sunaina Kasula, Hwasoo Shin) and scheduling contact
+      (Amanda Marfia) are constant across all six sessions.</p>
+
+    <div class="matrix-wrap">
+      <table class="sched">
+        <thead>
+          <tr><th>Group</th><th>Focus</th><th>Participants</th><th>Interview status</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="grp">A</td><td><span class="tag">Market Insights / Corporate Metrics</span></td>
+              <td>Adam Bigham; Kevin Rapes; Christopher Bemben</td><td>Not started</td></tr>
+          <tr><td class="grp">B</td><td><span class="tag">Market Insights / Corporate Metrics</span></td>
+              <td>Amy Pinder; Sarah Therrian; Alyssa Pougnet; Brandon Rademacher</td><td>Not started</td></tr>
+          <tr><td class="grp">C</td><td><span class="tag">Business Development</span></td>
+              <td>Bradley Wassink; Carrie Russell; Dillon Brown; Sana Matloub; Patrick Monks</td><td>Not started</td></tr>
+          <tr><td class="grp">D</td><td><span class="tag">Strategy</span></td>
+              <td>Matthew Kohtz; Dominic Edwards; Kurt Van Deuren; Jessica Perry</td><td>Not started</td></tr>
+          <tr><td class="grp">E</td><td><span class="tag">Strategy</span></td>
+              <td>Thomas Wattles; Almir Karamovic; Joel Flugstad; Matthew Poolman; Paul Hoffman; Joseph Sausser</td><td>Not started</td></tr>
+          <tr><td class="grp">F</td><td><span class="tag">Strategy</span></td>
+              <td>Caroline Albano; Chelsea Grover; Ross Strambu — Priority Health; Michael Bekheet</td><td>Not started</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note warn"><b>Group F includes a Priority Health participant</b> (Ross Strambu) —
+      the only named payer-side attendee. With patient-level Epic↔MHA/Trilliant joins now an
+      explicit non-goal (see "What changed" above), this session is the place to ask exactly how
+      payer data is meant to combine with provider data at all.</div>
+  </div>
+</section>
+
+<section id="s2">
+  <div class="wrap">
+    <p class="eyebrow"><span class="secnum">Section 2</span> · Every Session</p>
+    <h2 class="sec-title">Baseline questions — ask identically in all six</h2>
+    <p class="sec-lede">Built from the 12 tracker requirements scoped to "All Groups." Each
+      validates ownership, current-state grain, source system, and governance — the fields the
+      tracker's Interview_Capture sheet expects back.</p>
+
+    <div class="baseline">
+      <div class="bq"><span class="qn">B1</span><div>By care setting — encounter, visit, procedure, discharge, patient-day —
+        which volume definition is authoritative today, and over what period/benchmark do you compare?<span class="req">REQ-001</span></div></div>
+      <div class="bq"><span class="qn">B2</span><div>For revenue, charges and denials, which report or system is your source of truth today,
+        and who owns that definition?<span class="req">REQ-002 · REQ-003</span></div></div>
+      <div class="bq"><span class="qn">B3</span><div>Where do FTE, staffing ratio, RVU and turnover figures come from today — Workday, Strata,
+        Epic, or a manually reconciled spreadsheet?<span class="req">REQ-007</span></div></div>
+      <div class="bq"><span class="qn">B4</span><div>Which access/capacity measures do you actually use (third-next-available, OR block time,
+        bed/room utilization), and what threshold signals a real constraint vs. normal variation?<span class="req">REQ-011 · REQ-012 · REQ-013</span></div></div>
+      <div class="bq"><span class="qn">B5</span><div>How do you connect quality/outcome measures — readmissions, LOS, mortality, safety,
+        patient experience — to financial or operational performance today? Is that link manual?<span class="req">REQ-014 · REQ-015</span></div></div>
+      <div class="bq"><span class="qn">B6</span><div>When you drill from a system-wide number down to a specific procedure or diagnosis,
+        what's the actual path, and who owns the hierarchy/mapping you use?<span class="req">REQ-016</span></div></div>
+      <div class="bq"><span class="qn">B7</span><div>For ZIP/payer/sex/age/race/ethnicity cuts, do you ever need patient-level detail, or is
+        aggregated-cohort level always sufficient? Any minimum-cell-size or suppression rule you
+        already follow?<span class="req">REQ-017</span></div></div>
+      <div class="bq"><span class="qn">B8</span><div>Which handful of KPIs would you consider "must-have" on a system-wide executive
+        scorecard, and what currently produces them?<span class="req">REQ-018</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="s3">
+  <div class="wrap">
+    <p class="eyebrow"><span class="secnum">Section 3</span> · Groups A &amp; B</p>
+    <h2 class="sec-title">Market Insights &amp; Corporate Metrics</h2>
+
+    <div class="session">
+      <div class="shead">
+        <h3>Session question set</h3>
+        <span class="groups">Baseline (B1–B8) + this set — used for Groups A and B, separate sessions, same questions</span>
+      </div>
+      <p class="focus-desc">Requirements scoped to A/B and not to Group C: market definition,
+        demand trend, and opportunity scoring (REQ-008, 009, 010).</p>
+
+      <div class="participants">
+        <div class="pgroup"><div class="pg-name">Group A</div>
+          <ul><li>Adam Bigham</li><li>Kevin Rapes</li><li>Christopher Bemben</li></ul></div>
+        <div class="pgroup"><div class="pg-name">Group B</div>
+          <ul><li>Amy Pinder</li><li>Sarah Therrian</li><li>Alyssa Pougnet</li><li>Brandon Rademacher</li></ul></div>
+      </div>
+
+      <ul class="qlist">
+        <li><span class="qn">Q1</span><div><span class="req">REQ-008</span>How do you define "market" today — geography, service line,
+          or both — and how consistently is that boundary applied across your reports?<span class="qtopic">Market Position &amp; Consumer Dynamics</span></div></li>
+        <li><span class="qn">Q2</span><div><span class="req">REQ-008</span>How do you separate Corewell's own volume from total market
+          volume in the MHA/Trilliant data? Is there a facility-to-system crosswalk you already trust?<span class="qtopic">Market Position &amp; Consumer Dynamics</span></div></li>
+        <li><span class="qn">Q3</span><div><span class="req">REQ-009</span>What forecast horizon and minimum % change count as a
+          "material" growth or decline trend?<span class="qtopic">Market Position &amp; Consumer Dynamics</span></div></li>
+        <li><span class="qn">Q4</span><div><span class="req">REQ-010</span>When evaluating a market opportunity (new service,
+          geography, population), is there a documented scoring or ranking method today, or is it judgment-based?<span class="qtopic">Market Position &amp; Consumer Dynamics</span></div></li>
+        <li><span class="qn">Q5</span><div>What's the single most time-consuming manual report you produce today that this
+          model should eliminate?<span class="qtopic">Cross-cutting</span></div></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="s4">
+  <div class="wrap">
+    <p class="eyebrow"><span class="secnum">Section 4</span> · Group C</p>
+    <h2 class="sec-title">Business Development</h2>
+
+    <div class="session">
+      <div class="shead">
+        <h3>Session question set</h3>
+        <span class="groups">Baseline (B1–B8) + this set — used for Group C</span>
+      </div>
+      <p class="focus-desc">Requirements scoped to Business Development and Strategy groups
+        (C–F) but not to A/B: cost accounting, allocation, cross-site comparison, opportunity
+        evaluation, and scenario modeling (REQ-004, 005, 006, 010, 019).</p>
+
+      <div class="participants">
+        <div class="pgroup"><div class="pg-name">Group C</div>
+          <ul><li>Bradley Wassink</li><li>Carrie Russell</li><li>Dillon Brown</li><li>Sana Matloub</li><li>Patrick Monks</li></ul></div>
+      </div>
+
+      <ul class="qlist">
+        <li><span class="qn">Q1</span><div><span class="req">REQ-004</span>How is financial performance (contribution margin,
+          revenue, cost) currently sliced by service/location/market, and what's the biggest blocker
+          to trusting those numbers across sites?<span class="qtopic">Cost Accounting Financial Performance</span></div></li>
+        <li><span class="qn">Q2</span><div><span class="req">REQ-005</span>Who owns cost-allocation rules today (direct/indirect/
+          fixed/variable), and how are "controllable" vs. "allocated" costs distinguished in your models?<span class="qtopic">Cost Accounting Financial Performance</span></div></li>
+        <li><span class="qn">Q3</span><div><span class="req">REQ-006</span>When comparing costs across sites doing similar work, how
+          do you normalize for acuity, volume, and allocation differences today — or is that a known gap?<span class="qtopic">Cost Accounting Financial Performance</span></div></li>
+        <li><span class="qn">Q4</span><div><span class="req">REQ-010</span>Walk through a recent opportunity evaluation end-to-end —
+          what data did you assemble, from where, and where did the process break down?<span class="qtopic">Market Position &amp; Consumer Dynamics</span></div></li>
+        <li><span class="qn">Q5</span><div><span class="req">REQ-019</span>For scenario/what-if modeling on a growth opportunity,
+          what assumptions, approval gates, and outputs do you need captured, and how do you keep
+          actuals, forecasts, and scenarios separate today?<span class="qtopic">Data Model Vision</span></div></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="s5">
+  <div class="wrap">
+    <p class="eyebrow"><span class="secnum">Section 5</span> · Groups D, E &amp; F</p>
+    <h2 class="sec-title">Strategy</h2>
+
+    <div class="session">
+      <div class="shead">
+        <h3>Session question set</h3>
+        <span class="groups">Baseline (B1–B8) + this set — used for Groups D, E and F, same questions, plus one Group-F-only item</span>
+      </div>
+      <p class="focus-desc">Strategy is the only focus area scoped to every SOW topic area in the
+        tracker — it inherits both the market questions (A/B) and the cost/opportunity/scenario
+        questions (C), since those decisions ultimately land here.</p>
+
+      <div class="participants">
+        <div class="pgroup"><div class="pg-name">Group D</div>
+          <ul><li>Matthew Kohtz</li><li>Dominic Edwards</li><li>Kurt Van Deuren</li><li>Jessica Perry</li></ul></div>
+        <div class="pgroup"><div class="pg-name">Group E</div>
+          <ul><li>Thomas Wattles</li><li>Almir Karamovic</li><li>Joel Flugstad</li><li>Matthew Poolman</li><li>Paul Hoffman</li><li>Joseph Sausser</li></ul></div>
+        <div class="pgroup"><div class="pg-name">Group F</div>
+          <ul><li>Caroline Albano</li><li>Chelsea Grover</li><li>Ross Strambu — Priority Health</li><li>Michael Bekheet</li></ul></div>
+      </div>
+
+      <p class="subhead">Cost &amp; opportunity (shared with Group C)</p>
+      <ul class="qlist">
+        <li><span class="qn">Q1</span><div><span class="req">REQ-004</span>Financial performance by service/location/market —
+          what's the biggest blocker to trusting those numbers across sites?<span class="qtopic">Cost Accounting Financial Performance</span></div></li>
+        <li><span class="qn">Q2</span><div><span class="req">REQ-005</span>Who owns cost-allocation rules, and how do you distinguish
+          controllable from allocated cost?<span class="qtopic">Cost Accounting Financial Performance</span></div></li>
+        <li><span class="qn">Q3</span><div><span class="req">REQ-006</span>How do you normalize cross-site cost comparisons for
+          acuity, volume, and allocation differences today?<span class="qtopic">Cost Accounting Financial Performance</span></div></li>
+      </ul>
+
+      <p class="subhead">Market (shared with Groups A/B)</p>
+      <ul class="qlist">
+        <li><span class="qn">Q4</span><div><span class="req">REQ-008</span>How is "market" defined, and is that boundary applied
+          consistently across teams?<span class="qtopic">Market Position &amp; Consumer Dynamics</span></div></li>
+        <li><span class="qn">Q5</span><div><span class="req">REQ-009 · REQ-010</span>What forecast horizon/materiality threshold
+          defines a real trend, and is opportunity scoring documented or judgment-based today?<span class="qtopic">Market Position &amp; Consumer Dynamics</span></div></li>
+      </ul>
+
+      <p class="subhead">Strategy-specific</p>
+      <ul class="qlist">
+        <li><span class="qn">Q6</span><div><span class="req">REQ-019</span>For scenario/what-if modeling, what assumptions,
+          approval gates, and outputs need capturing — and how do you separate actuals, forecasts, and
+          scenarios today?<span class="qtopic">Data Model Vision</span></div></li>
+        <li><span class="qn">Q7</span><div>Of the six SOW topic areas, which is most urgent for your team specifically, and why?<span class="qtopic">Cross-cutting</span></div></li>
+        <li><span class="qn">Q8</span><div><b>(Group F only)</b> REQ-003's notes state MHA/Trilliant cannot join to Epic at the
+          patient level — with Priority Health represented in this session, how does payer-side data
+          (claims, membership, risk) actually combine with provider-side data for strategic modeling
+          today, and does that combination ever happen below the aggregate level?<span class="req">REQ-003 · REQ-015</span><span class="qtopic">Cross-cutting — payer/provider boundary</span></div></li>
+      </ul>
+    </div>
+
+    <div class="note"><b>How this feeds the engagement.</b> Answers here — especially B2/B3/B5 and
+      Group F's Q8 — should confirm whether revenue-cycle/claims, workforce, and patient-experience
+      systems are fully named, and validate the "no patient-level Epic↔MHA/Trilliant join" and
+      "Caboodle-only" working principles against what these teams actually do today.</div>
+  </div>
+</section>
+
+<section id="s6" style="border-bottom:none">
+  <div class="wrap">
+    <p class="eyebrow"><span class="secnum">Section 6</span> · Traceability</p>
+    <h2 class="sec-title">Requirement-to-question map</h2>
+    <p class="sec-lede">Every REQ ID from the Priority 1 Requirements Tracker, which group(s) it's
+      scoped to, and where it's asked in this guide — for logging answers back into
+      Interview_Capture.</p>
+
+    <div class="matrix-wrap">
+      <table class="reqmap">
+        <thead><tr><th>REQ</th><th>Requirement</th><th>Scoped groups</th><th>Asked as</th></tr></thead>
+        <tbody>
+          <tr><td class="rid">REQ-001</td><td>Current volume and trend</td><td>All</td><td>B1</td></tr>
+          <tr><td class="rid">REQ-002</td><td>Revenue performance drivers</td><td>All</td><td>B2</td></tr>
+          <tr><td class="rid">REQ-003</td><td>Reimbursement / payer dynamics</td><td>All</td><td>B2, F·Q8</td></tr>
+          <tr><td class="rid">REQ-004</td><td>Financial performance by service/location/market</td><td>C–F</td><td>C·Q1, D-F·Q1</td></tr>
+          <tr><td class="rid">REQ-005</td><td>Controllable vs. allocated cost</td><td>C–F</td><td>C·Q2, D-F·Q2</td></tr>
+          <tr><td class="rid">REQ-006</td><td>Cross-site cost comparison</td><td>C–F</td><td>C·Q3, D-F·Q3</td></tr>
+          <tr><td class="rid">REQ-007</td><td>Staffing/productivity impact on performance</td><td>All</td><td>B3</td></tr>
+          <tr><td class="rid">REQ-008</td><td>Market volume and performance trend</td><td>A, B, D–F</td><td>A/B·Q1–Q2, D-F·Q4</td></tr>
+          <tr><td class="rid">REQ-009</td><td>Market demand growth/contraction</td><td>A, B, D–F</td><td>A/B·Q3, D-F·Q5</td></tr>
+          <tr><td class="rid">REQ-010</td><td>Market opportunity scoring</td><td>All</td><td>A/B·Q4, C·Q4, D-F·Q5</td></tr>
+          <tr><td class="rid">REQ-011</td><td>Access constraints on growth</td><td>All</td><td>B4</td></tr>
+          <tr><td class="rid">REQ-012</td><td>Unused capacity</td><td>All</td><td>B4</td></tr>
+          <tr><td class="rid">REQ-013</td><td>Asset/resource utilization</td><td>All</td><td>B4</td></tr>
+          <tr><td class="rid">REQ-014</td><td>Quality/outcomes/safety variation</td><td>All</td><td>B5</td></tr>
+          <tr><td class="rid">REQ-015</td><td>Clinical outcomes ↔ operational/financial link</td><td>All</td><td>B5, F·Q8</td></tr>
+          <tr><td class="rid">REQ-016</td><td>Stackable drill-down dimensions</td><td>All</td><td>B6</td></tr>
+          <tr><td class="rid">REQ-017</td><td>Demographic coverage &amp; suppression rules</td><td>All / Governance SMEs</td><td>B7</td></tr>
+          <tr><td class="rid">REQ-018</td><td>Cross-domain performance / value drivers</td><td>All</td><td>B8</td></tr>
+          <tr><td class="rid">REQ-019</td><td>Future-state scenario modeling</td><td>C–F</td><td>C·Q5, D-F·Q6</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div><b style="color:var(--ink)">Prepared by TEKsystems Team</b> · Corewell Health Snowflake DD&amp;A ·
+      Stakeholder Interview Question Guide v2.0, draft for Jay's review</div>
+    <div class="mono">Confidential · 6 sessions · 3 focus areas · 19 requirements traced</div>
+  </div>
+</footer>
