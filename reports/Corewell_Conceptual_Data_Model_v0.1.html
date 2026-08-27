@@ -427,7 +427,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between}
       <h4>Sourcing <span class="n">— unblocks the technical model</span></h4>
       <ul class="qlist">
         <li><span class="qn">Q1</span>Can we get the <b>Epic</b> (Clarity or Caboodle) and <b>Strata</b> data dictionaries — the two sources named in discovery that we still don't have?</li>
-        <li><span class="qn">Q2</span>Which <b>HOSPITALID(s)</b> in the MHA file are Corewell's facilities? Without this, market-share analysis has no "us vs. market" split.</li>
+        <li><span class="qn">Q2</span>Which <b>HOSPITALID(s)</b> in the MHA file are Corewell's facilities? Without this, market-share analysis has no “us vs. market” split.</li>
         <li><span class="qn">Q3</span>Which <b>Trilliant datasets</b> are actually licensed beyond Visits and Organization Directory — Provider Directory, Demand Forecast, Price Transparency, Site Selection?</li>
       </ul>
     </div>
@@ -473,7 +473,7 @@ const ENTITIES = [
  ["DRG / MDC Grouping","strong","MHA IP only: MSDRG, MSMDC (CMS grouper). Trilliant: drg_code, drg_description, drg_severity, mdc_code/description. Conforms directly if grouper version matches — confirm.",["mha","tri"]],
  ["Provider (Individual)","strong","Shared vocabulary: NPI. MHA: Referring/PCP/Attending/Surgeon NPI. Trilliant: rendering/referring/pcp provider NPI, name, specialty, estimated age.",["mha","tri"]],
  ["Organization / Facility","weak","MHA: HOSPITALID — MHA's own 4-char code, NOT an NPI. Trilliant: site_of_service_npi, rendering_organization_npi, Organization Directory with organization_npi + in_system_organization flag. Needs a HOSPITALID→NPI crosswalk.",["mha","tri"]],
- ["Payer","weak","MHA: PRIMARYPAYER — MHA's own coded list (Medicare FFS/Managed, Medicaid, BCBS, Commercial, Self-Pay...). Trilliant: payer_name, payer_type (free-text-like categories). Needs a categorical crosswalk.",["mha","tri"]],
+ ["Payer","weak","MHA: PRIMARYPAYER — MHA's own coded list (Medicare FFS/Managed, Medicaid, BCBS, Commercial, Self-Pay…). Trilliant: payer_name, payer_type (free-text-like categories). Needs a categorical crosswalk.",["mha","tri"]],
  ["Geography / Market","weak","MHA: ZIPCODE (5-digit), COUNTYPATIENT_FIPS. Trilliant: person_service_area_state/cbsa/market/zip(3)/county/city; separate site_of_service geography. ZIP5 vs ZIP3 conflict — see Constraint 2.",["mha","tri"]],
  ["Service Line","weak","Trilliant: explicit service_line field + visit_has_surgical/oncology/behavioral/etc flags. MHA: no field — must derive from MSDRG/MSMDC (IP) or procedure category (OP). Central modeling task — see Constraint 3.",["mha","tri"]],
  ["Cancer / Oncology","none","Trilliant only: cancer_site, cancer_sub_site, cancer_condition_code/description, cancer_diagnosis_date, cancer_malignancy, diagnosing provider. No MHA equivalent field — would need derivation from oncology DRG/diagnosis codes.",["tri"]],

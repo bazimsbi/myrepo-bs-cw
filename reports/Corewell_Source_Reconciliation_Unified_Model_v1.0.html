@@ -446,7 +446,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between}
           <tr><td class="entity">Facility / region</td>
             <td><code>CH_EAST/WEST/SOUTH_HOSPITALS_SA</code>, <code>COREWELL_HEALTH_REGIONS</code>, <code>HOSPITALID</code></td>
             <td>Same <code>CH_EAST/WEST/SOUTH</code> columns; <code>SITE_OF_SERVICE_NPI</code> for exact site</td>
-            <td><code>DSS Entity</code> + <code>Region</code> (Strata Calculation: "Lookup Table from Entity split between region East, West, South")</td>
+            <td><code>DSS Entity</code> + <code>Region</code> (Strata Calculation: “Lookup Table from Entity split between region East, West, South”)</td>
             <td><span class="status-tag ok">CONFORMED — all three</span><br>Same East/West/South structure everywhere. This is the facility-to-system crosswalk the interview guide asked whether Corewell trusts — it already exists.</td></tr>
           <tr><td class="entity">Geography</td>
             <td>ZIP (5-digit) + <code>COUNTYPATIENTFIPS</code> (state+county FIPS)</td>
@@ -705,7 +705,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between}
             <td>Neither is a strict superset of the other — <b>open question for Corewell</b>: which one is the agreed denominator when they disagree (see §9).</td></tr>
           <tr><td>Market share, growth, network leakage</td>
             <td><span class="src-chip mha">MHA</span> + <span class="src-chip tril">Trilliant</span> (numerator from Strata/Epic)</td>
-            <td>Numerator (Corewell's own volume) must come from Strata/Epic, not from MHA/Trilliant's own "our volume" fields, to avoid double-counting definitions.</td></tr>
+            <td>Numerator (Corewell's own volume) must come from Strata/Epic, not from MHA/Trilliant's own “our volume” fields, to avoid double-counting definitions.</td></tr>
           <tr><td>Referral network / in-network vs. competitor</td>
             <td><span class="src-chip tril">Trilliant</span></td>
             <td>Only source with organization parent-name and org-type hierarchy on rendering/referring/PCP providers.</td></tr>
